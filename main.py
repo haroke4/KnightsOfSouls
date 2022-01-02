@@ -4,21 +4,29 @@ from files.environment_classes import Wall
 
 pygame.init()
 pygame.mixer.init()  # music activation
-screen = pygame.display.set_mode((500, 500))
-clock = pygame.time.Clock()
+screen = pygame.display.set_mode((1920, 1080), pygame.FULLSCREEN)
 
-Wall()
-Wall(100, 50)
+
+for _ in range(250):
+    if _ == 3:
+        continue
+    Wall(50 * _, 100)
 Player()
 playing = True
 while playing:
-    for __event in pygame.event.get():
-        if __event.type == pygame.QUIT:
+    clock.tick(FPS)
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
             playing = False
-        if __event.type == pygame.MOUSEBUTTONDOWN:
-            Wall(*__event.pos)
-    all_sprites.update()
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            Wall(*event.pos)
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_q:
+                playing = False
 
+
+    pygame.display.set_caption(str(clock.get_fps()))
+    all_sprites.update()
     screen.fill(pygame.Color("black"))
     all_sprites.draw(screen)
 
