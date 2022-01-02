@@ -8,10 +8,10 @@ class Player(pygame.sprite.Sprite):
         self.image = pygame.image.load("files/img/abobus.png")
         self.rect = self.image.get_rect()
         self.x, self.y = x, y  # because pygame cant operate with float numbers
+        self.global_x, self.global_y = x, y
         self.hitbox = Hitbox(4, 35, 32, 15)
         self.hitbox.set_pos(self.rect.x, self.rect.y)
-
-        self.speed = 1
+        self.speed = 0.5
 
     @staticmethod
     def get_velocity():
@@ -32,18 +32,20 @@ class Player(pygame.sprite.Sprite):
 
     def update(self):
         velocity = self.get_velocity()
+        move_x, move_y = velocity.x * self.speed, velocity.y * self.speed
+        self.x += move_x
+        self.global_x += move_x
+        self.hitbox.set_pos(self.global_x, self.global_y)
+        if self.hitbox.colliding_objects():
+            self.x -= move_x
+            self.global_x -= move_x
 
-        self.hitbox.set_pos(self.x + velocity.x * self.speed,
-                            self.y + velocity.y * self.speed)
+        self.y += move_y
+        self.global_y += move_y
+        self.hitbox.set_pos(self.global_x, self.global_y)
+        if self.hitbox.colliding_objects():
+            self.y -= move_y
+            self.global_y -= move_y
 
-        x_colliding, y_colliding = self.hitbox.is_colliding()
-        if not x_colliding:
-            self.x += velocity.x * self.speed
-            self.rect.x = int(self.x)
-        if not y_colliding:
-            self.y += velocity.y * self.speed
-            self.rect.y = int(self.y)
-
-        self.hitbox.set_pos(self.x, self.y)
-
+        self.rect.x, self.rect.y = int(self.x), int(self.y)
         all_sprites.change_layer(self, self.rect.bottom)
