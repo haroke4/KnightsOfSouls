@@ -25,13 +25,13 @@ class Camera:
         self.dy = 0
 
     def apply(self, obj):
-        if hasattr(obj, "x"):
-            obj.x += self.dx
-            obj.y += self.dy
-        else:
-            obj.rect.x += self.dx
-            obj.rect.y += self.dy
+        obj.x += self.dx
+        obj.y += self.dy
 
     def update(self, target):
         self.dx = -(target.x + target.rect.w // 2 - WIDTH // 2.5)
         self.dy = -(target.y + target.rect.h // 2 - HEIGHT // 2.5)
+        if self.dx < -1 or self.dx > 1:
+            self.dx = self.dx * 0.01 if not -0.3 < self.dx * 0.01 < 0.3 else 0.3 * self.dx / abs(self.dx)
+        if self.dy < -1 or self.dy > 1:
+            self.dy = self.dy * 0.01 if not -0.3 < self.dy * 0.01 < 0.3 else 0.3 * self.dy / abs(self.dy)

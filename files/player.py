@@ -11,7 +11,7 @@ class Player(pygame.sprite.Sprite):
         self.global_x, self.global_y = x, y
         self.hitbox = Hitbox(4, 35, 32, 15)
         self.hitbox.set_pos(self.rect.x, self.rect.y)
-        self.speed = 0.5
+        self.speed = 2
 
     @staticmethod
     def get_velocity():
