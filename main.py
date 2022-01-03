@@ -9,17 +9,24 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
 clock = pygame.time.Clock()
 font = pygame.font.Font(None, 25)
 
-player = Archer()
-MovingWall(50, 50)
-Wall(100, 100)
+player = Archer(250, 250)
+
+# box
+for i in range(20):
+    Wall(50 * i, 50)
+for i in range(20):
+    Wall(50 * i, 500)
+for i in range(23):
+    Wall(50, 50 + 20 * i)
+for i in range(23):
+    Wall(950, 50 + 20 * i)
 playing = True
 while playing:
-    clock.tick(FPS)
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             playing = False
         elif event.type == pygame.MOUSEBUTTONDOWN:
-            a = MovingWall(*event.pos)
+            player.attack(*event.pos)
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_q:
                 playing = False
@@ -29,16 +36,20 @@ while playing:
             if event.key == pygame.K_LSHIFT:
                 player.running = False
 
-    pygame.display.set_caption(str(clock.get_fps()))
     all_sprites.update()
 
     CAMERA.update(player)
 
-    screen.fill(pygame.Color("black"))
+    screen.fill(pygame.Color("grey"))
     all_sprites.draw(screen)
 
     screen.blit(font.render(f" HP: {player.heath}", True, pygame.Color("white")), (50, 20))
-    screen.blit(font.render(f"Armor: {player.armor}, {int(player.global_y)}", True, pygame.Color("white")), (50, 50))
-    screen.blit(font.render(f"{player.walk_speed} | {player.run_speed}", True, pygame.Color("white")), (50, 80))
+    screen.blit(font.render(f"FPS: {clock.get_fps()}", True, pygame.Color("white")), (50, 50))
+    if player.bow.last_arrow:
+        # screen.blit(font.render(f"{int(player.bow.last_arrow.global_y), player.bow.last_arrow.hitbox.rect.y}", True, pygame.Color("white")), (50, 80))
+        screen.blit(font.render(f"{player.bow.last_arrow.angle}", True, pygame.Color("white")), (50, 80))
+
+    screen.blit(font.render(f"{len(all_sprites)}", True, pygame.Color("white")), (50, 120))
 
     pygame.display.flip()
+    clock.tick(FPS)

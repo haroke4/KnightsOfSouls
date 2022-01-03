@@ -2,15 +2,14 @@ from files.global_stuff import *
 
 
 class BaseHero(BaseGameObject):
-    def __init__(self, x, y, image, health, armor, protection, walk_speed, run_speed, attack_cooldown, damage):
-        super().__init__(x, y, image, [6, 35, 36, 15])
+    def __init__(self, x, y, image, health, armor, protection, walk_speed, run_speed, attack_cooldown):
+        super().__init__(x, y, image, [6, 35, 36, 15], PLAYER_TEAM)
         self.heath = health
         self.armor = armor
         self.protection = protection
         self.walk_speed = walk_speed
         self.run_speed = run_speed
         self.attack_cooldown = attack_cooldown
-        self.damage = damage
         self.running = False
         self.velocity = pygame.Vector2(0, 0)
 
@@ -21,13 +20,12 @@ class BaseHero(BaseGameObject):
             self.velocity.x += -1
         if keystates[pygame.K_d]:
             self.velocity.x += 1
-
         if keystates[pygame.K_w]:
             self.velocity.y += -1
         if keystates[pygame.K_s]:
             self.velocity.y += 1
         if not self.velocity.is_normalized() and self.velocity.length() != 0:
-            self.velocity.normalize()
+            self.velocity.normalize_ip()
 
     def update(self):
         self.update_velocity()
@@ -47,16 +45,69 @@ class BaseHero(BaseGameObject):
         if self.hitbox.get_colliding_objects():
             self.global_y -= move_y
             self.hitbox.set_pos(self.global_x, self.global_y)
-
+        all_sprites.change_layer(self, self.global_y + self.rect.h)
         super().update()
-        all_sprites.change_layer(self, self.global_y)
 
 
 class Archer(BaseHero):
     def __init__(self, x=0, y=0):
-        super().__init__(x, y, "abobus.png", *get_hero_characteristic("archer"))
+        data = get_hero_characteristic("archer")
+        super().__init__(x, y, "abobus.png", *data[:-1])
+        self.bow = Bow(x, y, self.team, data[-1])
+
+    def attack(self, x, y):
+        self.bow.shot(x, y)
+
+    def update(self):
+        self.bow.set_pos(self.global_x + 30, self.global_y + 1)
+        all_sprites.change_layer(self.bow, self.bow.global_y + self.bow.rect.h)
+        super().update()
+
+
+class Bow(BaseGameObject):
+    def __init__(self, x, y, team, damage):
+        super().__init__(x, y, "bow.png", hitbox=None, team=team)
+        self.damage = damage
+        self.last_arrow = None
+
+    def shot(self, x, y):
+        x, y = from_local_to_global_pos(x, y)
+        v = pygame.Vector2(x - self.global_x - self.rect.w // 2, y - self.global_y - self.rect.h // 2)
+        angle = v.angle_to(pygame.Vector2(1, 0))
+
+        self.last_arrow = Arrow(self.global_x + self.rect.w // 2, self.global_y + self.rect.h // 2, self.team,
+                                self.damage, v.normalize() * 10, angle)
+
+
+class Arrow(BaseGameObject):
+    def __init__(self, x, y, team, damage, vector, angle):
+        super().__init__(x, y, "arrow.png", FROM_MASK, team)
+        self.image = pygame.transform.rotate(self.image, angle)
+        rot_rect = self.image.get_rect(center=self.rect.center)
+
+        self.global_x -= self.rect.x - rot_rect.x
+        self.global_y -= self.rect.y - rot_rect.y
+
+        self.damage = damage
+        self.vector = vector
+        self.angle = angle
+
+    def update(self):
+        self.global_x += self.vector.x
+        self.global_y += self.vector.y
+
+        if self in all_sprites:
+            all_sprites.change_layer(self, self.global_y + self.rect.h)
+            self.hitbox.set_pos(self.global_x, self.global_y)
+            super().update()
+
+            colliding_obj = self.hitbox.get_colliding_objects(include_team_members=False)
+            for i in colliding_obj:
+                if pygame.sprite.collide_mask(self.hitbox, i):
+                    self.kill()
+                    self.hitbox.kill()
 
 
 class TestHero(BaseHero):
     def __init__(self, x=0, y=0):
-        super().__init__(x, y, "abobus.png", 1, 1, 1, 1, 2, 1, 1)
+        super().__init__(x, y, "abobus.png", 1, 1, 1, 1, 2, 1)

@@ -27,15 +27,17 @@ class Hitbox(pygame.sprite.Sprite):
         self.image = pygame.Surface((width, height))
         self.image.fill(pygame.Color("red"))
         self.dx, self.dy = dx, dy
-        self.parent = parent
+        self.parent: BaseGameObject = parent
 
     def set_pos(self, x, y):
         self.rect.x, self.rect.y = int(x + self.dx), int(y + self.dy)
 
-    def get_colliding_objects(self):
+    def get_colliding_objects(self, include_team_members=False):
         temp = pygame.sprite.spritecollide(self, hitbox_group, False)
         temp.remove(self)
-        return temp
+        if include_team_members:
+            return temp
+        return list(filter(lambda x: x.parent.team != self.parent.team or x.parent.team is None, temp))
 
 
 class Camera:
@@ -57,21 +59,27 @@ class Camera:
 
 
 class BaseGameObject(pygame.sprite.Sprite):
-    def __init__(self, x, y, img, hitbox=None):  # hitbox = [dx, dy, width, height]
+    def __init__(self, x, y, img, hitbox=None, team=None, ):  # hitbox = [dx, dy, width, height]
         super().__init__(all_sprites)
         self.image = pygame.image.load(f"files/img/{img}")
         self.rect = self.image.get_rect()
-        self.global_x, self.global_y = from_local_to_global_pos(x, y)
-        if hitbox:
+        self.global_x, self.global_y = x, y
+        self.team = team
+
+        if hitbox == FROM_MASK:
+            self.hitbox = Hitbox(0, 16, self.rect.w, self.rect.h, self)
+            self.hitbox.mask = pygame.mask.from_surface(self.image)
+            self.hitbox.set_pos(self.global_x, self.global_y)
+
+        elif hitbox:
             self.hitbox = Hitbox(*hitbox, self)
             self.hitbox.set_pos(self.global_x, self.global_y)
         else:
             self.hitbox = None
-        all_sprites.change_layer(self, self.global_y)
+        all_sprites.change_layer(self, self.global_y + self.rect.h)
 
     def set_pos(self, glob_x, glob_y):
         self.global_x, self.global_y = glob_x, glob_y
-        self.update()
 
     def update(self):
         self.rect.x, self.rect.y = [int(i) for i in from_global_to_local_pos(self.global_x, self.global_y)]
@@ -80,6 +88,8 @@ class BaseGameObject(pygame.sprite.Sprite):
 ctypes.windll.user32.SetProcessDPIAware()
 true_res = (ctypes.windll.user32.GetSystemMetrics(0), ctypes.windll.user32.GetSystemMetrics(1))
 
+FROM_MASK = 2
+PLAYER_TEAM = 20
 FPS = 144
 WIDTH = true_res[0]
 HEIGHT = true_res[1]
