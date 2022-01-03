@@ -1,16 +1,9 @@
-from files.global_variables import *
-from files.basic_classes import Hitbox
+from files.global_stuff import *
 
 
-class Player(pygame.sprite.Sprite):
+class Player(BaseGameObject):
     def __init__(self, x=0, y=0):
-        super().__init__(all_sprites)
-        self.image = pygame.image.load("files/img/abobus.png")
-        self.rect = self.image.get_rect()
-        self.x, self.y = x, y  # because pygame cant operate with float numbers
-        self.global_x, self.global_y = x, y
-        self.hitbox = Hitbox(4, 35, 32, 15)
-        self.hitbox.set_pos(self.rect.x, self.rect.y)
+        super().__init__(x, y, "abobus.png", [4, 35, 32, 15])
         self.speed = 2
 
     @staticmethod
@@ -33,19 +26,15 @@ class Player(pygame.sprite.Sprite):
     def update(self):
         velocity = self.get_velocity()
         move_x, move_y = velocity.x * self.speed, velocity.y * self.speed
-        self.x += move_x
         self.global_x += move_x
         self.hitbox.set_pos(self.global_x, self.global_y)
         if self.hitbox.colliding_objects():
-            self.x -= move_x
             self.global_x -= move_x
 
-        self.y += move_y
         self.global_y += move_y
         self.hitbox.set_pos(self.global_x, self.global_y)
         if self.hitbox.colliding_objects():
-            self.y -= move_y
             self.global_y -= move_y
 
-        self.rect.x, self.rect.y = int(self.x), int(self.y)
-        all_sprites.change_layer(self, self.rect.bottom)
+        super().update()
+        all_sprites.change_layer(self, self.global_y)
