@@ -3,6 +3,7 @@
 """
 import pygame
 import ctypes
+import sqlite3
 
 
 def from_local_to_global_pos(x, y):
@@ -13,18 +14,25 @@ def from_global_to_local_pos(global_x, global_y):
     return global_x + CAMERA.all_x_offset, global_y + CAMERA.all_y_offset
 
 
+def get_hero_characteristic(name):
+    con = sqlite3.connect("files/database.sqlite")
+    data = con.execute(f"""SELECT * FROM characteristics WHERE name == "{name}" """).fetchone()
+    return data[1:-1]
+
+
 class Hitbox(pygame.sprite.Sprite):
-    def __init__(self, dx, dy, width, height):
+    def __init__(self, dx, dy, width, height, parent):
         super().__init__(hitbox_group, all_sprites)  # add second argument "all_sprites" to show image of hitbox
         self.rect = pygame.Rect(0, 0, width, height)
         self.image = pygame.Surface((width, height))
         self.image.fill(pygame.Color("red"))
         self.dx, self.dy = dx, dy
+        self.parent = parent
 
     def set_pos(self, x, y):
         self.rect.x, self.rect.y = int(x + self.dx), int(y + self.dy)
 
-    def colliding_objects(self):
+    def get_colliding_objects(self):
         temp = pygame.sprite.spritecollide(self, hitbox_group, False)
         temp.remove(self)
         return temp
@@ -35,8 +43,7 @@ class Camera:
         self.dx = 0
         self.dy = 0
         self.all_x_offset = self.all_y_offset = 0
-# 1920 1080
-# 1680
+
     def update(self, target):
         self.dx = -(target.rect.x + target.rect.w // 2 - WIDTH // 2)
         self.dy = -(target.rect.y + target.rect.h // 2 - HEIGHT // 2)
@@ -56,11 +63,15 @@ class BaseGameObject(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.global_x, self.global_y = from_local_to_global_pos(x, y)
         if hitbox:
-            self.hitbox = Hitbox(*hitbox)
+            self.hitbox = Hitbox(*hitbox, self)
             self.hitbox.set_pos(self.global_x, self.global_y)
         else:
             self.hitbox = None
         all_sprites.change_layer(self, self.global_y)
+
+    def set_pos(self, glob_x, glob_y):
+        self.global_x, self.global_y = glob_x, glob_y
+        self.update()
 
     def update(self):
         self.rect.x, self.rect.y = [int(i) for i in from_global_to_local_pos(self.global_x, self.global_y)]
