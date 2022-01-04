@@ -27,8 +27,6 @@ while playing:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             playing = False
-        elif event.type == pygame.MOUSEBUTTONDOWN:
-            player.attack(*event.pos)
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_q:
                 playing = False
@@ -47,9 +45,6 @@ while playing:
 
     screen.blit(font.render(f" HP: {player.heath}", True, pygame.Color("white")), (50, 20))
     screen.blit(font.render(f"FPS: {clock.get_fps()}", True, pygame.Color("white")), (50, 40))
-    screen.blit(font.render(f"{player.spear.angle}", True, pygame.Color("white")), (50, 60))
-    screen.blit(font.render(f"{player.spear.global_x, player.spear.global_y}", True, pygame.Color("white")), (50, 80))
-    screen.blit(font.render(f"{from_local_to_global_pos(player.spear.rect.x, player.spear.rect.y)}", True, pygame.Color("white")), (50, 100))
 
     pygame.display.flip()
     clock.tick(FPS)

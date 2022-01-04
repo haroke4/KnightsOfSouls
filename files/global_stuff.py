@@ -62,8 +62,6 @@ class Camera:
 
 
 class BaseGameObject(pygame.sprite.Sprite):
-    hitbox: None
-
     def __init__(self, x, y, img, hitbox=None, team=None):  # hitbox = [dx, dy, width, height]
         super().__init__(all_sprites)
         self.image = pygame.image.load(f"files/img/{img}")
