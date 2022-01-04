@@ -88,7 +88,7 @@ class Spear(BaseGameObject):
         self.angle = pygame.Vector2(x - self.global_x - self.rect.w // 2,
                                     y - self.global_y - self.rect.h // 2).normalize().angle_to(pygame.Vector2(1, 0))
         self.image = pygame.transform.rotate(self.orig_image, self.angle)
-        self.rect = self.image.get_rect(center=(self.rect.x, self.rect))
+        self.rect = self.image.get_rect(center=(self.rect.x, self.rect.y))
 
     def update(self):
         self.hitbox.set_pos(self.global_x, self.global_y)

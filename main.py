@@ -49,7 +49,7 @@ while playing:
     screen.blit(font.render(f"FPS: {clock.get_fps()}", True, pygame.Color("white")), (50, 40))
     screen.blit(font.render(f"{player.spear.angle}", True, pygame.Color("white")), (50, 60))
     screen.blit(font.render(f"{player.spear.global_x, player.spear.global_y}", True, pygame.Color("white")), (50, 80))
-    screen.blit(font.render(f"{player.global_x, player.global_y}", True, pygame.Color("white")), (50, 100))
+    screen.blit(font.render(f"{from_local_to_global_pos(player.spear.rect.x, player.spear.rect.y)}", True, pygame.Color("white")), (50, 100))
 
     pygame.display.flip()
     clock.tick(FPS)
