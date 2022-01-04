@@ -1,4 +1,5 @@
 import pygame.mouse
+import math
 
 from files.global_stuff import *
 
@@ -85,14 +86,15 @@ class Spear(BaseGameObject):
 
     def look_at_mouse(self):
         x, y = from_local_to_global_pos(*pygame.mouse.get_pos())
-        self.angle = pygame.Vector2(x - self.global_x - self.rect.w // 2,
-                                    y - self.global_y - self.rect.h // 2).normalize().angle_to(pygame.Vector2(1, 0))
+        self.angle = pygame.Vector2(x - self.parent.global_x - self.rect.w // 2,
+                                    y - self.parent.global_y - self.rect.h // 2).normalize().angle_to(pygame.Vector2(1, 0))
+        if self.angle < 0:
+            self.angle += 360
         self.image = pygame.transform.rotate(self.orig_image, self.angle)
-        self.rect = self.image.get_rect(center=(self.rect.x, self.rect.y))
+        self.rect = self.image.get_rect(center=(self.rect.x + 100 * math.cos(self.angle/180*math.pi) - 5,
+                                                self.rect.y - 100 * math.sin(self.angle/180*math.pi)))
 
     def update(self):
-        self.hitbox.set_pos(self.global_x, self.global_y)
-        super().update()
         if self.shooted:
             self.global_x += self.vector.x * self.speed
             self.global_y += self.vector.y * self.speed
@@ -102,7 +104,11 @@ class Spear(BaseGameObject):
                     self.hitbox.kill()
         else:
             self.look_at_mouse()
+            self.set_pos(self.parent.global_x + 50 * math.cos(self.angle/180*math.pi),
+                         self.parent.global_y - 50 * math.sin(self.angle/180*math.pi))
             all_sprites.change_layer(self, self.global_y + self.rect.h)
+        self.hitbox.set_pos(self.global_x, self.global_y)
+        super().update()
 
 
 class TestHero(BaseHero):
