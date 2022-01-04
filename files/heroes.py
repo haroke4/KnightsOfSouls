@@ -47,79 +47,62 @@ class BaseHero(BaseGameObject):
         if self.hitbox.get_colliding_objects():
             self.global_y -= move_y
             self.hitbox.set_pos(self.global_x, self.global_y)
+
         all_sprites.change_layer(self, self.global_y + self.rect.h)
         super().update()
 
 
-class Archer(BaseHero):
+class Spearman(BaseHero):
     def __init__(self, x=0, y=0):
         data = get_hero_characteristic("archer")
         super().__init__(x, y, "abobus.png", *data[:-1])
-        self.bow = Bow(x, y, self.team, data[-1])
+        self.spear = Spear(x, y, self.team, data[-1], self)
+        self.spear_dx, self.spear_dy = 30, 5
+        self.damage = data[-1]
 
     def attack(self, x, y):
-        self.bow.shot(x, y)
-
-    def update(self):
-        self.bow.set_pos(self.global_x + 30, self.global_y + 1)
-        all_sprites.change_layer(self.bow, self.bow.global_y + self.bow.rect.h)
-        self.bow.look_at_mouse()
-        super().update()
+        self.spear.shot()
+        self.spear = Spear(250, 250, self.team, self.damage, self)
+        self.spear.update()
 
 
-class Bow(BaseGameObject):
-    def __init__(self, x, y, team, damage):
-        super().__init__(x, y, "Bow.png", hitbox=None, team=team)
+class Spear(BaseGameObject):
+    def __init__(self, x, y, team, damage, parent):
+        super().__init__(x, y, "arrow.png", hitbox=ARROW, team=team)
         self.orig_image = self.image
         self.damage = damage
-        self.last_arrow = None
+        self.parent = parent
+
         self.angle = 0
+        self.speed = 6
+        self.shooted = False
+        self.vector = pygame.Vector2(0, 0)
 
-    def shot(self, x, y):
-        x, y = from_local_to_global_pos(x, y)
-        v = pygame.Vector2(1, 0).rotate(-self.angle)
-
-        self.last_arrow = Arrow(self.global_x + self.rect.w // 2, self.global_y + self.rect.h // 2,
-                                self.team, self.damage, v.normalize() * 10, self.angle)
+    def shot(self):
+        self.vector = pygame.Vector2(1, 0).rotate(-self.angle).normalize()
+        self.hitbox.mask = pygame.mask.from_surface(self.image)
+        self.shooted = True
 
     def look_at_mouse(self):
         x, y = from_local_to_global_pos(*pygame.mouse.get_pos())
         self.angle = pygame.Vector2(x - self.global_x - self.rect.w // 2,
                                     y - self.global_y - self.rect.h // 2).normalize().angle_to(pygame.Vector2(1, 0))
         self.image = pygame.transform.rotate(self.orig_image, self.angle)
-        rot_rect = self.image.get_rect(center=self.rect.center)
-
-        self.global_x -= self.rect.x - rot_rect.x
-        self.global_y -= self.rect.y - rot_rect.y
-
-
-class Arrow(BaseGameObject):
-    def __init__(self, x, y, team, damage, vector, angle):
-        super().__init__(x, y, "arrow.png", ARROW, team)
-        self.image = pygame.transform.rotate(self.image, angle)
-        self.hitbox.mask = pygame.mask.from_surface(self.image)
-        rot_rect = self.image.get_rect(center=self.rect.center)
-        self.global_x -= self.rect.x - rot_rect.x
-        self.global_y -= self.rect.y - rot_rect.y
-
-        self.damage = damage
-        self.vector = vector
-        self.angle = angle
+        self.rect = self.image.get_rect(center=(self.rect.x, self.rect))
 
     def update(self):
-        self.global_x += self.vector.x
-        self.global_y += self.vector.y
-
-        if self in all_sprites:
-            all_sprites.change_layer(self, self.hitbox.rect.bottom)
-            self.hitbox.set_pos(self.global_x, self.global_y)
-            super().update()
-
-            colliding_obj = self.hitbox.get_colliding_objects(include_team_members=False)
-            for i in colliding_obj:
+        self.hitbox.set_pos(self.global_x, self.global_y)
+        super().update()
+        if self.shooted:
+            self.global_x += self.vector.x * self.speed
+            self.global_y += self.vector.y * self.speed
+            for i in self.hitbox.get_colliding_objects(include_team_members=False):
                 if pygame.sprite.collide_mask(self.hitbox, i):
                     self.kill()
                     self.hitbox.kill()
+        else:
+            self.look_at_mouse()
+            all_sprites.change_layer(self, self.global_y + self.rect.h)
 
 
 class TestHero(BaseHero):

@@ -22,10 +22,10 @@ def get_hero_characteristic(name):
 
 class Hitbox(pygame.sprite.Sprite):
     def __init__(self, dx, dy, width, height, parent):
-        super().__init__(hitbox_group)  # add second argument "all_sprites" to show image of hitbox
+        super().__init__(hitbox_group, all_sprites)  # add second argument "all_sprites" to show image of hitbox
         self.rect = pygame.Rect(0, 0, width, height)
         self.image = pygame.Surface((width, height))
-        # self.image.fill(pygame.Color("red"))
+        self.image.fill(pygame.Color("red"))
         self.dx, self.dy = dx, dy
         self.parent: BaseGameObject = parent
 
@@ -62,7 +62,9 @@ class Camera:
 
 
 class BaseGameObject(pygame.sprite.Sprite):
-    def __init__(self, x, y, img, hitbox=None, team=None, ):  # hitbox = [dx, dy, width, height]
+    hitbox: None
+
+    def __init__(self, x, y, img, hitbox=None, team=None):  # hitbox = [dx, dy, width, height]
         super().__init__(all_sprites)
         self.image = pygame.image.load(f"files/img/{img}")
         self.rect = self.image.get_rect()
