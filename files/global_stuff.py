@@ -22,10 +22,10 @@ def get_hero_characteristic(name):
 
 class Hitbox(pygame.sprite.Sprite):
     def __init__(self, dx, dy, width, height, parent):
-        super().__init__(hitbox_group, all_sprites)  # add second argument "all_sprites" to show image of hitbox
+        super().__init__(hitbox_group)  # add second argument "all_sprites" to show image of hitbox
         self.rect = pygame.Rect(0, 0, width, height)
         self.image = pygame.Surface((width, height))
-        self.image.fill(pygame.Color("red"))
+        # self.image.fill(pygame.Color("red"))
         self.dx, self.dy = dx, dy
         self.parent: BaseGameObject = parent
 
@@ -33,7 +33,7 @@ class Hitbox(pygame.sprite.Sprite):
         self.rect.x, self.rect.y = int(x + self.dx), int(y + self.dy)
 
     def get_colliding_objects(self, include_team_members=False):
-        temp = pygame.sprite.spritecollide(self, hitbox_group, False)
+        temp = pygame.sprite.spritecollide(self, hitbox_group, False, pygame.sprite.collide_rect)
         temp.remove(self)
         if include_team_members:
             return temp
@@ -44,15 +44,18 @@ class Camera:
     def __init__(self):
         self.dx = 0
         self.dy = 0
+        self.min_speed = 0.7
         self.all_x_offset = self.all_y_offset = 0
 
     def update(self, target):
         self.dx = -(target.rect.x + target.rect.w // 2 - WIDTH // 2)
         self.dy = -(target.rect.y + target.rect.h // 2 - HEIGHT // 2)
         if self.dx < -1 or self.dx > 1:
-            self.dx = self.dx * 0.01 if not -0.4 < self.dx * 0.01 < 0.4 else 0.4 * self.dx / abs(self.dx)
+            self.dx = self.dx * 0.01 if not -self.min_speed < self.dx * 0.01 < self.min_speed else\
+                self.min_speed * self.dx / abs(self.dx)
         if self.dy < -1 or self.dy > 1:
-            self.dy = self.dy * 0.01 if not -0.4 < self.dy * 0.01 < 0.4 else 0.4 * self.dy / abs(self.dy)
+            self.dy = self.dy * 0.01 if not -self.min_speed < self.dy * 0.01 < self.min_speed else\
+                self.min_speed * self.dy / abs(self.dy)
 
         self.all_x_offset += self.dx
         self.all_y_offset += self.dy
@@ -66,11 +69,9 @@ class BaseGameObject(pygame.sprite.Sprite):
         self.global_x, self.global_y = x, y
         self.team = team
 
-        if hitbox == FROM_MASK:
+        if hitbox == ARROW:
             self.hitbox = Hitbox(0, 16, self.rect.w, self.rect.h, self)
-            self.hitbox.mask = pygame.mask.from_surface(self.image)
             self.hitbox.set_pos(self.global_x, self.global_y)
-
         elif hitbox:
             self.hitbox = Hitbox(*hitbox, self)
             self.hitbox.set_pos(self.global_x, self.global_y)
@@ -88,9 +89,9 @@ class BaseGameObject(pygame.sprite.Sprite):
 ctypes.windll.user32.SetProcessDPIAware()
 true_res = (ctypes.windll.user32.GetSystemMetrics(0), ctypes.windll.user32.GetSystemMetrics(1))
 
-FROM_MASK = 2
+ARROW = 2
 PLAYER_TEAM = 20
-FPS = 144
+FPS = 100
 WIDTH = true_res[0]
 HEIGHT = true_res[1]
 

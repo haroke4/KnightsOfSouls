@@ -44,12 +44,8 @@ while playing:
     all_sprites.draw(screen)
 
     screen.blit(font.render(f" HP: {player.heath}", True, pygame.Color("white")), (50, 20))
-    screen.blit(font.render(f"FPS: {clock.get_fps()}", True, pygame.Color("white")), (50, 50))
-    if player.bow.last_arrow:
-        # screen.blit(font.render(f"{int(player.bow.last_arrow.global_y), player.bow.last_arrow.hitbox.rect.y}", True, pygame.Color("white")), (50, 80))
-        screen.blit(font.render(f"{player.bow.last_arrow.angle}", True, pygame.Color("white")), (50, 80))
-
-    screen.blit(font.render(f"{len(all_sprites)}", True, pygame.Color("white")), (50, 120))
+    screen.blit(font.render(f"FPS: {clock.get_fps()}", True, pygame.Color("white")), (50, 40))
+    screen.blit(font.render(f"{len(all_sprites)}", True, pygame.Color("white")), (50, 60))
 
     pygame.display.flip()
     clock.tick(FPS)
