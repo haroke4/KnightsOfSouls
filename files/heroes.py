@@ -7,7 +7,6 @@ from threading import Timer
 
 class BaseHero(BaseGameObject):
     def __init__(self, x, y, image, health, armor, protection, walk_speed, run_speed, attack_cooldown):
-        super().__init__(x, y, image, [6, 35, 36, 15], PLAYER_TEAM)
         self.heath = health
         self.armor = armor
         self.protection = protection
@@ -16,6 +15,7 @@ class BaseHero(BaseGameObject):
         self.attack_cooldown = attack_cooldown
         self.running = False
         self.velocity = pygame.Vector2(0, 0)
+        super().__init__(x, y, image, [6, 35, 36, 15], PLAYER_TEAM)
 
     def key_input(self):
         keystates = pygame.key.get_pressed()
@@ -72,7 +72,7 @@ class Spearman(BaseHero):
         if self.spear:
             self.spear.shot()
             self.spear = None
-            Timer(self.attack_cooldown, self.new_spear).start()
+            Timer(0.1, self.new_spear).start()
 
     def new_spear(self):
         self.spear = Spear(250, 250, self.team, self.damage, self)
@@ -81,15 +81,15 @@ class Spearman(BaseHero):
 
 class Spear(BaseGameObject):
     def __init__(self, x, y, team, damage, parent):
-        super().__init__(x, y, "arrow.png", hitbox=ARROW, team=team)
-        self.orig_image = self.image
         self.damage = damage
         self.parent = parent
-
         self.angle = 0
         self.speed = 10
         self.shooted = False
         self.vector = pygame.Vector2(0, 0)
+
+        super().__init__(x, y, "arrow.png", hitbox=ARROW, team=team)
+        self.orig_image = self.image
 
     def shot(self):
         self.vector = pygame.Vector2(1, 0).rotate(-self.angle).normalize()
@@ -98,14 +98,14 @@ class Spear(BaseGameObject):
 
     def look_at_mouse(self):
         x, y = from_local_to_global_pos(*pygame.mouse.get_pos())
-        self.angle = pygame.Vector2(x - self.parent.global_x - self.rect.w // 2,
-                                    y - self.parent.global_y - self.rect.h // 2).normalize().angle_to(
-            pygame.Vector2(1, 0))
+        self.angle = pygame.Vector2(x - self.parent.global_x - self.rect.w // 2, y - self.parent.global_y
+                                    - self.rect.h // 2).normalize().angle_to(pygame.Vector2(1, 0))
         if self.angle < 0:
             self.angle += 360
         self.image = pygame.transform.rotate(self.orig_image, self.angle)
 
     def update(self):
+        all_sprites.change_layer(self, self.hitbox.rect.bottom)
         if self.shooted:
             self.global_x += self.vector.x * self.speed
             self.global_y += self.vector.y * self.speed
@@ -115,13 +115,14 @@ class Spear(BaseGameObject):
                     self.hitbox.kill()
         else:
             self.look_at_mouse()
-            self.set_pos(self.parent.global_x + 40 * math.cos(self.angle / 180 * math.pi),
+            self.set_pos(self.parent.global_x + 40 * math.cos(self.angle / 180 * math.pi) + 3,
                          self.parent.global_y - 40 * math.sin(self.angle / 180 * math.pi) + 15)
-            all_sprites.change_layer(self, self.global_y + self.rect.h)
+
         self.hitbox.set_pos(self.global_x, self.global_y)
         super().update()
 
 
-class TestHero(BaseHero):
+class MagicMan(BaseHero):
     def __init__(self, x=0, y=0):
-        super().__init__(x, y, "abobus.png", 1, 1, 1, 1, 2, 1)
+        data = get_hero_characteristic("archer")
+        super().__init__(x, y, *data[:-1])

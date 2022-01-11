@@ -63,7 +63,7 @@ class Camera:
 
 class BaseGameObject(pygame.sprite.Sprite):
     def __init__(self, x, y, img, hitbox=None, team=None):  # hitbox = [dx, dy, width, height]
-        super().__init__(all_sprites)
+
         self.image = pygame.image.load(f"files/img/{img}")
         self.rect = self.image.get_rect()
         self.global_x, self.global_y = x, y
@@ -77,6 +77,8 @@ class BaseGameObject(pygame.sprite.Sprite):
             self.hitbox.set_pos(self.global_x, self.global_y)
         else:
             self.hitbox = None
+
+        super().__init__(all_sprites)
         all_sprites.change_layer(self, self.global_y + self.rect.h)
 
     def set_pos(self, glob_x, glob_y):
