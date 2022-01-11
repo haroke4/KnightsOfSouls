@@ -1,5 +1,5 @@
 from files.global_stuff import *
-from files.heroes import Spearman
+from files.heroes import MagicMan, Spearman
 from files.environment_classes import MovingWall, Wall
 
 print(WIDTH, HEIGHT)
@@ -43,8 +43,9 @@ while playing:
     screen.fill(pygame.Color("grey"))
     all_sprites.draw(screen)
 
-    screen.blit(font.render(f" HP: {player.heath}", True, pygame.Color("white")), (50, 20))
+    screen.blit(font.render(f" HP: {player.health}", True, pygame.Color("white")), (50, 20))
     screen.blit(font.render(f"FPS: {clock.get_fps()}", True, pygame.Color("white")), (50, 40))
+    screen.blit(font.render(f"FPS: {len(all_sprites)}", True, pygame.Color("white")), (50, 60))
 
     pygame.display.flip()
     clock.tick(FPS)

@@ -7,7 +7,8 @@ from threading import Timer
 
 class BaseHero(BaseGameObject):
     def __init__(self, x, y, image, health, armor, protection, walk_speed, run_speed, attack_cooldown):
-        self.heath = health
+        self.dead = False
+        self.health = health
         self.armor = armor
         self.protection = protection
         self.walk_speed = walk_speed
@@ -59,6 +60,19 @@ class BaseHero(BaseGameObject):
         all_sprites.change_layer(self, self.global_y + self.rect.h)
         super().update()
 
+    def take_damage(self, damage):
+        damage = damage - self.protection
+        if damage > 0:
+            self.armor -= damage
+            if self.armor < 0:
+                self.health -= abs(self.armor)
+                if self.health <= 0:
+                    self.die()
+                self.armor = 0
+
+    def die(self):
+        self.dead = True
+
 
 class Spearman(BaseHero):
     def __init__(self, x=0, y=0):
@@ -72,10 +86,10 @@ class Spearman(BaseHero):
         if self.spear:
             self.spear.shot()
             self.spear = None
-            Timer(0.1, self.new_spear).start()
+            Timer(self.attack_cooldown, self.new_spear).start()
 
     def new_spear(self):
-        self.spear = Spear(250, 250, self.team, self.damage, self)
+        self.spear = Spear(self.global_x, self.global_y, self.team, self.damage, self)
         self.spear.update()
 
 
@@ -88,7 +102,7 @@ class Spear(BaseGameObject):
         self.shooted = False
         self.vector = pygame.Vector2(0, 0)
 
-        super().__init__(x, y, "arrow.png", hitbox=ARROW, team=team)
+        super().__init__(x, y, "arrow.png", hitbox=HITBOX_ARROW, team=team)
         self.orig_image = self.image
 
     def shot(self):
@@ -111,8 +125,9 @@ class Spear(BaseGameObject):
             self.global_y += self.vector.y * self.speed
             for i in self.hitbox.get_colliding_objects(include_team_members=False):
                 if pygame.sprite.collide_mask(self.hitbox, i):
-                    self.kill()
-                    self.hitbox.kill()
+                    if hasattr(i.parent, "health"):
+                        i.parent.take_damage(self.damage)
+                    self.die()
         else:
             self.look_at_mouse()
             self.set_pos(self.parent.global_x + 40 * math.cos(self.angle / 180 * math.pi) + 3,
@@ -125,4 +140,40 @@ class Spear(BaseGameObject):
 class MagicMan(BaseHero):
     def __init__(self, x=0, y=0):
         data = get_hero_characteristic("archer")
-        super().__init__(x, y, *data[:-1])
+        self.can_shot = True
+        self.attack_range = 300
+        super().__init__(x, y, "abobus.png", *data[:-1])
+        self.damage = data[-1]
+
+    def attack(self, x, y):
+        if self.can_shot:
+            x, y = from_local_to_global_pos(x, y)
+            vector = pygame.Vector2(x - self.global_x, y - self.global_y)
+            if vector.length() >= self.attack_range:
+                vector = vector.normalize() * self.attack_range + (self.global_x, self.global_y)
+                x, y = vector.x, vector.y
+            fire = FireBall(x, y, self.damage, self.team)
+            self.can_shot = False
+            Timer(self.attack_cooldown, self.enable_shot).start()
+            Timer(self.attack_cooldown, fire.die).start()
+
+    def enable_shot(self):
+        self.can_shot = True
+
+
+class FireBall(BaseGameObject):
+    def __init__(self, x, y, damage, team):
+        self.damage = damage
+        self.damage_taken = []
+        super().__init__(x - 50, y - 20, "fire.png", HITBOX_FULL_RECT, team)
+        super().update()
+        all_sprites.change_layer(self, 0)
+
+    def update(self):
+        for i in self.hitbox.get_colliding_objects(True):
+            if i in self.damage_taken:
+                continue
+            if hasattr(i.parent, "health"):
+                i.parent.take_damage(self.damage)
+            self.damage_taken.append(i)
+        super().update()

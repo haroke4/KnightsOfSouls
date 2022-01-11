@@ -51,10 +51,10 @@ class Camera:
         self.dx = -(target.rect.x + target.rect.w // 2 - WIDTH // 2)
         self.dy = -(target.rect.y + target.rect.h // 2 - HEIGHT // 2)
         if self.dx < -1 or self.dx > 1:
-            self.dx = self.dx * 0.01 if not -self.min_speed < self.dx * 0.01 < self.min_speed else\
+            self.dx = self.dx * 0.01 if not -self.min_speed < self.dx * 0.01 < self.min_speed else \
                 self.min_speed * self.dx / abs(self.dx)
         if self.dy < -1 or self.dy > 1:
-            self.dy = self.dy * 0.01 if not -self.min_speed < self.dy * 0.01 < self.min_speed else\
+            self.dy = self.dy * 0.01 if not -self.min_speed < self.dy * 0.01 < self.min_speed else \
                 self.min_speed * self.dy / abs(self.dy)
 
         self.all_x_offset += self.dx
@@ -69,11 +69,13 @@ class BaseGameObject(pygame.sprite.Sprite):
         self.global_x, self.global_y = x, y
         self.team = team
 
-        if hitbox == ARROW:
-            self.hitbox = Hitbox(0, 16, self.rect.w, self.rect.h, self)
-            self.hitbox.set_pos(self.global_x, self.global_y)
-        elif hitbox:
-            self.hitbox = Hitbox(*hitbox, self)
+        if hitbox:
+            if hitbox == HITBOX_ARROW:
+                self.hitbox = Hitbox(0, 16, self.rect.w, self.rect.h, self)
+            elif hitbox == HITBOX_FULL_RECT:
+                self.hitbox = Hitbox(0, 0, self.rect.w, self.rect.h, self)
+            else:
+                self.hitbox = Hitbox(*hitbox, self)
             self.hitbox.set_pos(self.global_x, self.global_y)
         else:
             self.hitbox = None
@@ -87,11 +89,17 @@ class BaseGameObject(pygame.sprite.Sprite):
     def update(self):
         self.rect.x, self.rect.y = [int(i) for i in from_global_to_local_pos(self.global_x, self.global_y)]
 
+    def die(self):
+        if self.hitbox:
+            self.hitbox.kill()
+        self.kill()
+
 
 ctypes.windll.user32.SetProcessDPIAware()
 true_res = (ctypes.windll.user32.GetSystemMetrics(0), ctypes.windll.user32.GetSystemMetrics(1))
 
-ARROW = 2
+HITBOX_ARROW = 1
+HITBOX_FULL_RECT = 2
 PLAYER_TEAM = 20
 FPS = 100
 WIDTH = true_res[0]
