@@ -6,9 +6,9 @@ from threading import Timer
 
 
 class BaseHero(BaseGameObject):
-    def __init__(self, x, y, image, health, armor, protection, walk_speed, run_speed, attack_cooldown):
+    def __init__(self, x, y, image, hp, armor, protection, walk_speed, run_speed, attack_cooldown):
         self.dead = False
-        self.health = health
+        self.hp = hp
         self.armor = armor
         self.protection = protection
         self.walk_speed = walk_speed
@@ -47,13 +47,13 @@ class BaseHero(BaseGameObject):
 
         self.global_x += move_x
         self.hitbox.set_pos(self.global_x, self.global_y)
-        if self.hitbox.get_colliding_objects():
+        if self.hitbox.get_colliding_objects(include_not_slidable_obj=False):
             self.global_x -= move_x
             self.hitbox.set_pos(self.global_x, self.global_y)
 
         self.global_y += move_y
         self.hitbox.set_pos(self.global_x, self.global_y)
-        if self.hitbox.get_colliding_objects():
+        if self.hitbox.get_colliding_objects(include_not_slidable_obj=False):
             self.global_y -= move_y
             self.hitbox.set_pos(self.global_x, self.global_y)
 
@@ -65,8 +65,8 @@ class BaseHero(BaseGameObject):
         if damage > 0:
             self.armor -= damage
             if self.armor < 0:
-                self.health -= abs(self.armor)
-                if self.health <= 0:
+                self.hp -= abs(self.armor)
+                if self.hp <= 0:
                     self.die()
                 self.armor = 0
 
@@ -125,7 +125,7 @@ class Spear(BaseGameObject):
             self.global_y += self.vector.y * self.speed
             for i in self.hitbox.get_colliding_objects(include_team_members=False):
                 if pygame.sprite.collide_mask(self.hitbox, i):
-                    if hasattr(i.parent, "health"):
+                    if hasattr(i.parent, "hp"):
                         i.parent.take_damage(self.damage)
                     self.die()
         else:
@@ -166,14 +166,13 @@ class FireBall(BaseGameObject):
         self.damage = damage
         self.damage_taken = []
         super().__init__(x - 50, y - 20, "fire.png", HITBOX_FULL_RECT, team)
-        super().update()
         all_sprites.change_layer(self, 0)
 
     def update(self):
-        for i in self.hitbox.get_colliding_objects(True):
+        for i in self.hitbox.get_colliding_objects():
             if i in self.damage_taken:
                 continue
-            if hasattr(i.parent, "health"):
+            if hasattr(i.parent, "hp"):
                 i.parent.take_damage(self.damage)
             self.damage_taken.append(i)
         super().update()

@@ -21,20 +21,25 @@ def get_hero_characteristic(name):
 
 
 class Hitbox(pygame.sprite.Sprite):
-    def __init__(self, dx, dy, width, height, parent):
+    def __init__(self, dx, dy, width, height, parent, can_slide):
         super().__init__(hitbox_group, all_sprites)  # add second argument "all_sprites" to show image of hitbox
         self.rect = pygame.Rect(0, 0, width, height)
         self.image = pygame.Surface((width, height))
         self.image.fill(pygame.Color("red"))
         self.dx, self.dy = dx, dy
         self.parent: BaseGameObject = parent
+        self.can_slide = can_slide
 
     def set_pos(self, x, y):
         self.rect.x, self.rect.y = int(x + self.dx), int(y + self.dy)
 
-    def get_colliding_objects(self, include_team_members=False):
+    def get_colliding_objects(self, include_team_members=False, include_not_slidable_obj=True):
         temp = pygame.sprite.spritecollide(self, hitbox_group, False, pygame.sprite.collide_rect)
         temp.remove(self)
+
+        if not include_not_slidable_obj:
+            temp = list(filter(lambda x: x.can_slide, temp))
+
         if include_team_members:
             return temp
         return list(filter(lambda x: x.parent.team != self.parent.team or x.parent.team is None, temp))
@@ -62,7 +67,7 @@ class Camera:
 
 
 class BaseGameObject(pygame.sprite.Sprite):
-    def __init__(self, x, y, img, hitbox=None, team=None):  # hitbox = [dx, dy, width, height]
+    def __init__(self, x, y, img, hitbox=None, team=None, can_slide=True):  # hitbox = [dx, dy, width, height]
 
         self.image = pygame.image.load(f"files/img/{img}")
         self.rect = self.image.get_rect()
@@ -71,16 +76,17 @@ class BaseGameObject(pygame.sprite.Sprite):
 
         if hitbox:
             if hitbox == HITBOX_ARROW:
-                self.hitbox = Hitbox(0, 16, self.rect.w, self.rect.h, self)
+                self.hitbox = Hitbox(0, 16, self.rect.w, self.rect.h, self, can_slide)
             elif hitbox == HITBOX_FULL_RECT:
-                self.hitbox = Hitbox(0, 0, self.rect.w, self.rect.h, self)
+                self.hitbox = Hitbox(0, 0, self.rect.w, self.rect.h, self, can_slide)
             else:
-                self.hitbox = Hitbox(*hitbox, self)
+                self.hitbox = Hitbox(*hitbox, self, can_slide)
             self.hitbox.set_pos(self.global_x, self.global_y)
         else:
             self.hitbox = None
 
         super().__init__(all_sprites)
+        self.update()
         all_sprites.change_layer(self, self.global_y + self.rect.h)
 
     def set_pos(self, glob_x, glob_y):
