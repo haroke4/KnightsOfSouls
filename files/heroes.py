@@ -1,6 +1,8 @@
+import random
+
 import pygame.mouse
 import math
-
+from files import units_characteristics
 from files.global_stuff import *
 from threading import Timer
 
@@ -9,16 +11,18 @@ class BaseHero(BaseGameObject):
     def __init__(self, x, y, image, hp, armor, protection, walk_speed, run_speed, attack_cooldown, damage):
         self.dead = False
         self.max_hp = self.hp = hp
-        self.armor = self.max_armor = armor
+        self.max_armor = self.armor = armor
         self.protection = protection
-        self.walk_speed = walk_speed
-        self.run_speed = run_speed
+        self.initial_walk_speed = self.walk_speed = walk_speed
+        self.initial_run_speed = self.run_speed = run_speed
         self.attack_cooldown = attack_cooldown
         self.damage = damage
         self.running = False
         self.gun = None
         self.velocity = pygame.Vector2(0, 0)
         super().__init__(x, y, image, [6, 35, 36, 15], PLAYER_TEAM)
+        self.damage_multiplier = 1
+        self.fire_damage = True  # для предмета "свеча"
 
     def key_input(self):
         keystates = pygame.key.get_pressed()
@@ -63,8 +67,9 @@ class BaseHero(BaseGameObject):
         all_sprites.change_layer(self, self.global_y + self.rect.h)
         super().update()
 
-    def take_damage(self, damage):
-        damage = damage - self.protection
+    def take_damage(self, damage, fire_damage=False):
+        """fire_damage НЕНАДО ставить TRUE. Это только для предмета свеча"""
+        damage = damage * self.damage_multiplier - self.protection
         if damage > 0:
             self.armor -= damage
             if self.armor < 0:
@@ -72,11 +77,19 @@ class BaseHero(BaseGameObject):
                 if self.hp <= 0:
                     self.die()
                 self.armor = 0
+        if self.fire_damage and not fire_damage:
+            # индикатор огня
+            Timer(1, self.take_damage, 1, True).start()
+            Timer(2, self.take_damage, 1, True).start()
 
-    def change_damage(self, value):
+    def change_damage(self, value):  # изменить урон
         self.damage = value
         if self.gun:
             self.gun.damage = value
+
+    def get_slowing_down_effect(self, time, percent):  # 0 < percent <= 100
+        self.run_speed = self.initial_run_speed * percent // 100
+        self.walk_speed = self.initial_walk_speed
 
     def die(self):
         self.dead = True
@@ -84,9 +97,10 @@ class BaseHero(BaseGameObject):
 
 class Spearman(BaseHero):
     def __init__(self, x=0, y=0):
-        data = get_hero_characteristic("archer")
-        super().__init__(x, y, "abobus.png", *data)
-        self.gun = Spear(x, y, self.team, data[-1], self)
+        data = units_characteristics.spearman
+        super().__init__(x, y, data["img"], data["hp"], data["armor"], data["protection"], data["walk_speed"],
+                         data["run_speed"], data["attack_cooldown"], data["damage"])
+        self.gun = Spear(x, y, self.team, data["damage"], self)
         self.spear_dx, self.spear_dy = 30, 5
 
     def attack(self, x, y):
@@ -109,7 +123,7 @@ class Spear(BaseGameObject):
         self.shooted = False
         self.vector = pygame.Vector2(0, 0)
 
-        super().__init__(x, y, "arrow.png", hitbox=HITBOX_ARROW, team=team)
+        super().__init__(x, y, units_characteristics.spearman['gun_img'], hitbox=HITBOX_ARROW, team=team)
         self.orig_image = self.image
 
     def shot(self):
@@ -133,7 +147,7 @@ class Spear(BaseGameObject):
             for i in self.hitbox.get_colliding_objects():
                 if pygame.sprite.collide_mask(self.hitbox, i):
                     if hasattr(i.parent, "hp"):
-                        i.parent.take_damage(self.damage)
+                        i.parent.take_damage(self.damage * 3 if random.randrange(1, 11) == 9 else self.damage)
                     self.die()
         else:
             self.look_at_mouse()
@@ -146,10 +160,11 @@ class Spear(BaseGameObject):
 
 class MagicMan(BaseHero):
     def __init__(self, x=0, y=0):
-        data = get_hero_characteristic("archer")
+        data = units_characteristics.magicman
         self.can_shot = True
-        self.attack_range = 300
-        super().__init__(x, y, "abobus.png", *data)
+        self.attack_range = data["attack_range"]
+        super().__init__(x, y, data["img"], data["hp"], data["armor"], data["protection"], data["walk_speed"],
+                         data["run_speed"], data["attack_cooldown"], data["damage"])
 
     def attack(self, x, y):
         if self.can_shot:
@@ -158,7 +173,7 @@ class MagicMan(BaseHero):
             if vector.length() >= self.attack_range:
                 vector = vector.normalize() * self.attack_range + (self.global_x, self.global_y)
                 x, y = vector.x, vector.y
-            fire = FireBall(x, y, self.damage, self.team)
+            fire = MagicManFire(x, y, self.damage, self.team)
             self.can_shot = False
             Timer(self.attack_cooldown, self.enable_shot).start()
             Timer(self.attack_cooldown, fire.die).start()
@@ -167,11 +182,11 @@ class MagicMan(BaseHero):
         self.can_shot = True
 
 
-class FireBall(BaseGameObject):
+class MagicManFire(BaseGameObject):
     def __init__(self, x, y, damage, team):
         self.damage = damage
         self.damage_taken = []
-        super().__init__(x - 50, y - 20, "fire.png", HITBOX_FULL_RECT, team)
+        super().__init__(x - 50, y - 20, units_characteristics.magicman["gun_img"], HITBOX_FULL_RECT, team)
         all_sprites.change_layer(self, 0)
 
     def update(self):
@@ -180,16 +195,18 @@ class FireBall(BaseGameObject):
                 continue
             if hasattr(i.parent, "hp"):
                 i.parent.take_damage(self.damage)
+                # i.parent.get_slowing_down_effect(time, percent)
             self.damage_taken.append(i)
         super().update()
 
 
 class SwordMan(BaseHero):
     def __init__(self, x=0, y=0):
-        data = get_hero_characteristic("archer")
+        data = units_characteristics.spearman
         self.can_attack = True
         self.dash_length = 30
-        super().__init__(x, y, "abobus.png", *data)
+        super().__init__(x, y, data["img"], data["hp"], data["armor"], data["protection"], data["walk_speed"],
+                         data["run_speed"], data["attack_cooldown"], data["damage"])
         self.damage = data[-1]
         self.gun = Sword(x, y, self.damage, self.team, self)
 
@@ -211,7 +228,7 @@ class Sword(BaseGameObject):
         self.attacking = False
         self.angle = 0
         self.vector = pygame.Vector2(0, 0)
-        super().__init__(x - 50, y - 20, "sword.png", HITBOX_ARROW, team)
+        super().__init__(x - 50, y - 20, units_characteristics.swordman["gun_img"], HITBOX_ARROW, team)
         self.orig_image = self.image
         all_sprites.change_layer(self, 0)
 

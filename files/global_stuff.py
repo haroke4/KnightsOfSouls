@@ -14,13 +14,6 @@ def from_global_to_local_pos(global_x, global_y):
     return global_x + CAMERA.all_x_offset, global_y + CAMERA.all_y_offset
 
 
-def get_hero_characteristic(name):
-    con = sqlite3.connect("files/database.sqlite")
-    data = con.execute(f"""SELECT * FROM characteristics WHERE name == "{name}" """).fetchone()
-    con.close()
-    return data[1:-1]
-
-
 class Hitbox(pygame.sprite.Sprite):
     def __init__(self, dx, dy, width, height, parent, can_slide):
         super().__init__(hitbox_group, all_sprites)  # add second argument "all_sprites" to show image of hitbox
