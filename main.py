@@ -10,7 +10,7 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
 clock = pygame.time.Clock()
 font = pygame.font.Font(None, 25)
 
-player = Spearman(250, 250)
+player = SwordMan(250, 250)
 Plaster(250, 300)
 # box
 for i in range(20):

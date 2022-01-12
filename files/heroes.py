@@ -207,7 +207,6 @@ class SwordMan(BaseHero):
         self.dash_length = 30
         super().__init__(x, y, data["img"], data["hp"], data["armor"], data["protection"], data["walk_speed"],
                          data["run_speed"], data["attack_cooldown"], data["damage"])
-        self.damage = data[-1]
         self.gun = Sword(x, y, self.damage, self.team, self)
 
     def enable_attack(self):
