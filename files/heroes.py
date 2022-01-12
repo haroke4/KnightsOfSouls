@@ -22,7 +22,8 @@ class BaseHero(BaseGameObject):
         self.velocity = pygame.Vector2(0, 0)
         super().__init__(x, y, image, [6, 35, 36, 15], PLAYER_TEAM)
         self.damage_multiplier = 1
-        self.fire_damage = True  # для предмета "свеча"
+        self.has_candle = True  # для предмета "свеча"
+        self.vampirism = 0  # FLOAT
 
     def key_input(self):
         keystates = pygame.key.get_pressed()
@@ -67,8 +68,8 @@ class BaseHero(BaseGameObject):
         all_sprites.change_layer(self, self.global_y + self.rect.h)
         super().update()
 
-    def take_damage(self, damage, fire_damage=False):
-        """fire_damage НЕНАДО ставить TRUE. Это только для предмета свеча"""
+    def take_damage(self, damage, from_candle=False):
+        """from_candle НЕНАДО ставить TRUE. Это только для предмета свеча"""
         damage = damage * self.damage_multiplier - self.protection
         if damage > 0:
             self.armor -= damage
@@ -77,18 +78,22 @@ class BaseHero(BaseGameObject):
                 if self.hp <= 0:
                     self.die()
                 self.armor = 0
-        if self.fire_damage and not fire_damage:
+        if self.has_candle and not from_candle:
             # индикатор огня
             Timer(1, self.take_damage, 1, True).start()
             Timer(2, self.take_damage, 1, True).start()
 
-    def change_damage(self, value):  # изменить урон
+    def increase_damage(self, value):  # увеличить урон
         self.damage = value
         if self.gun:
             self.gun.damage = value
 
-    def get_slowing_down_effect(self, time, percent):  # 0 < percent <= 100
-        self.run_speed = self.initial_run_speed * percent // 100
+    def get_slowing_down_effect(self, time, value):  # 0.00 < value <= 1
+        self.run_speed = self.initial_run_speed * value
+        self.walk_speed = self.initial_walk_speed
+
+    def remove_slowing_down_effect(self):
+        self.run_speed = self.initial_run_speed
         self.walk_speed = self.initial_walk_speed
 
     def die(self):
@@ -115,7 +120,7 @@ class Spearman(BaseHero):
 
 
 class Spear(BaseGameObject):
-    def __init__(self, x, y, team, damage, parent):
+    def __init__(self, x, y, team, damage, parent: Spearman):
         self.damage = damage
         self.parent = parent
         self.angle = 0
@@ -148,6 +153,8 @@ class Spear(BaseGameObject):
                 if pygame.sprite.collide_mask(self.hitbox, i):
                     if hasattr(i.parent, "hp"):
                         i.parent.take_damage(self.damage * 3 if random.randrange(1, 11) == 9 else self.damage)
+                        if i.parent.has_candle:
+                            pass  # надо учитывать что мобы могут быть убити
                     self.die()
         else:
             self.look_at_mouse()
