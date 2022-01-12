@@ -1,5 +1,5 @@
 from files.global_stuff import *
-from files.heroes import MagicMan, Spearman
+from files.heroes import *
 from files.items import Plaster
 from files.environment_classes import MovingWall, Wall
 
@@ -10,7 +10,7 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
 clock = pygame.time.Clock()
 font = pygame.font.Font(None, 25)
 
-player = MagicMan(250, 250)
+player = SwordMan(250, 250)
 Plaster(250, 300)
 # box
 for i in range(20):

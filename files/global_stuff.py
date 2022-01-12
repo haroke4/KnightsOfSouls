@@ -17,6 +17,7 @@ def from_global_to_local_pos(global_x, global_y):
 def get_hero_characteristic(name):
     con = sqlite3.connect("files/database.sqlite")
     data = con.execute(f"""SELECT * FROM characteristics WHERE name == "{name}" """).fetchone()
+    con.close()
     return data[1:-1]
 
 
@@ -33,7 +34,7 @@ class Hitbox(pygame.sprite.Sprite):
     def set_pos(self, x, y):
         self.rect.x, self.rect.y = int(x + self.dx), int(y + self.dy)
 
-    def get_colliding_objects(self, include_team_members=False, include_not_slidable_obj=True):
+    def get_colliding_objects(self, include_team_members=False, include_not_slidable_obj=False):
         temp = pygame.sprite.spritecollide(self, hitbox_group, False, pygame.sprite.collide_rect)
         temp.remove(self)
 
@@ -86,7 +87,6 @@ class BaseGameObject(pygame.sprite.Sprite):
             self.hitbox = None
 
         super().__init__(all_sprites)
-        self.update()
         all_sprites.change_layer(self, self.global_y + self.rect.h)
 
     def set_pos(self, glob_x, glob_y):

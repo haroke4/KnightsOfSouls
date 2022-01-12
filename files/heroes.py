@@ -6,15 +6,17 @@ from threading import Timer
 
 
 class BaseHero(BaseGameObject):
-    def __init__(self, x, y, image, hp, armor, protection, walk_speed, run_speed, attack_cooldown):
+    def __init__(self, x, y, image, hp, armor, protection, walk_speed, run_speed, attack_cooldown, damage):
         self.dead = False
-        self.hp = hp
-        self.armor = armor
+        self.max_hp = self.hp = hp
+        self.armor = self.max_armor = armor
         self.protection = protection
         self.walk_speed = walk_speed
         self.run_speed = run_speed
         self.attack_cooldown = attack_cooldown
+        self.damage = damage
         self.running = False
+        self.gun = None
         self.velocity = pygame.Vector2(0, 0)
         super().__init__(x, y, image, [6, 35, 36, 15], PLAYER_TEAM)
 
@@ -33,6 +35,7 @@ class BaseHero(BaseGameObject):
             self.velocity.normalize_ip()
 
         if pygame.mouse.get_pressed()[0]:
+            self.running = False
             self.attack(*pygame.mouse.get_pos())
 
     def attack(self, x, y):  # Чтобы ошибка не возникала
@@ -70,6 +73,11 @@ class BaseHero(BaseGameObject):
                     self.die()
                 self.armor = 0
 
+    def change_damage(self, value):
+        self.damage = value
+        if self.gun:
+            self.gun.damage = value
+
     def die(self):
         self.dead = True
 
@@ -77,20 +85,19 @@ class BaseHero(BaseGameObject):
 class Spearman(BaseHero):
     def __init__(self, x=0, y=0):
         data = get_hero_characteristic("archer")
-        super().__init__(x, y, "abobus.png", *data[:-1])
-        self.spear = Spear(x, y, self.team, data[-1], self)
+        super().__init__(x, y, "abobus.png", *data)
+        self.gun = Spear(x, y, self.team, data[-1], self)
         self.spear_dx, self.spear_dy = 30, 5
-        self.damage = data[-1]
 
     def attack(self, x, y):
-        if self.spear:
-            self.spear.shot()
-            self.spear = None
+        if self.gun:
+            self.gun.shot()
+            self.gun = None
             Timer(self.attack_cooldown, self.new_spear).start()
 
     def new_spear(self):
-        self.spear = Spear(self.global_x, self.global_y, self.team, self.damage, self)
-        self.spear.update()
+        self.gun = Spear(self.global_x, self.global_y, self.team, self.damage, self)
+        self.gun.update()
 
 
 class Spear(BaseGameObject):
@@ -123,7 +130,7 @@ class Spear(BaseGameObject):
         if self.shooted:
             self.global_x += self.vector.x * self.speed
             self.global_y += self.vector.y * self.speed
-            for i in self.hitbox.get_colliding_objects(include_team_members=False):
+            for i in self.hitbox.get_colliding_objects():
                 if pygame.sprite.collide_mask(self.hitbox, i):
                     if hasattr(i.parent, "hp"):
                         i.parent.take_damage(self.damage)
@@ -142,8 +149,7 @@ class MagicMan(BaseHero):
         data = get_hero_characteristic("archer")
         self.can_shot = True
         self.attack_range = 300
-        super().__init__(x, y, "abobus.png", *data[:-1])
-        self.damage = data[-1]
+        super().__init__(x, y, "abobus.png", *data)
 
     def attack(self, x, y):
         if self.can_shot:
@@ -175,4 +181,73 @@ class FireBall(BaseGameObject):
             if hasattr(i.parent, "hp"):
                 i.parent.take_damage(self.damage)
             self.damage_taken.append(i)
+        super().update()
+
+
+class SwordMan(BaseHero):
+    def __init__(self, x=0, y=0):
+        data = get_hero_characteristic("archer")
+        self.can_attack = True
+        self.dash_length = 30
+        super().__init__(x, y, "abobus.png", *data)
+        self.damage = data[-1]
+        self.gun = Sword(x, y, self.damage, self.team, self)
+
+    def enable_attack(self):
+        self.can_attack = True
+
+    def attack(self, x, y):
+        if self.can_attack:
+            self.gun.attack()
+            self.can_attack = False
+            Timer(1, self.enable_attack).start()
+
+
+class Sword(BaseGameObject):
+    def __init__(self, x, y, damage, team, parent):
+        self.damage = damage
+        self.parent = parent
+        self.damage_taken = []
+        self.attacking = False
+        self.angle = 0
+        self.vector = pygame.Vector2(0, 0)
+        super().__init__(x - 50, y - 20, "sword.png", HITBOX_ARROW, team)
+        self.orig_image = self.image
+        all_sprites.change_layer(self, 0)
+
+    def look_at_mouse(self):
+        x, y = from_local_to_global_pos(*pygame.mouse.get_pos())
+        self.angle = pygame.Vector2(x - self.parent.global_x - self.rect.w // 2, y - self.parent.global_y
+                                    - self.rect.h // 2).normalize().angle_to(pygame.Vector2(1, 0))
+        if self.angle < 0:
+            self.angle += 360
+        self.image = pygame.transform.rotate(self.orig_image, self.angle)
+
+    def attack(self):
+        self.vector = pygame.Vector2(1, 0).rotate(-self.angle).normalize()
+        self.attacking = True
+        Timer(0.05, self.attacking_false).start()
+
+    def attacking_false(self):
+        self.attacking = False
+        self.damage_taken.clear()
+        self.vector = pygame.Vector2(0, 0)
+
+    def update(self):
+        all_sprites.change_layer(self, self.hitbox.rect.bottom)
+        if self.attacking:
+
+            self.global_x += self.vector.x * 10
+            self.global_y += self.vector.y * 10
+            for i in self.hitbox.get_colliding_objects():
+                if i not in self.damage_taken:
+                    if pygame.sprite.collide_mask(self.hitbox, i):
+                        if hasattr(i.parent, "hp"):
+                            i.parent.take_damage(self.damage)
+                        self.damage_taken.append(i)
+        else:
+            self.look_at_mouse()
+            self.set_pos(self.parent.global_x + 40 * math.cos(self.angle / 180 * math.pi) + 3,
+                         self.parent.global_y - 40 * math.sin(self.angle / 180 * math.pi) + 20)
+        self.hitbox.set_pos(self.global_x, self.global_y)
         super().update()
