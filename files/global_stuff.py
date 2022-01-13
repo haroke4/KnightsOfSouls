@@ -91,12 +91,14 @@ class BaseGameObject(pygame.sprite.Sprite):
     def die(self):
         delete_later.append(self)
 
+
 ctypes.windll.user32.SetProcessDPIAware()
 true_res = (ctypes.windll.user32.GetSystemMetrics(0), ctypes.windll.user32.GetSystemMetrics(1))
 
 HITBOX_ARROW = 1
 HITBOX_FULL_RECT = 2
-PLAYER_TEAM = 20
+PLAYER_TEAM = "player"
+ENEMY_TEAM = "enemy"
 FPS = 100
 WIDTH = true_res[0]
 HEIGHT = true_res[1]
