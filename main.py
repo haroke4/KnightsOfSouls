@@ -1,6 +1,6 @@
 from files.global_stuff import *
 from files.heroes import *
-from files.items import Plaster
+from files.items import *
 from files.environment_classes import MovingWall, Wall
 
 print(WIDTH, HEIGHT)
@@ -11,7 +11,12 @@ clock = pygame.time.Clock()
 font = pygame.font.Font(None, 25)
 
 player = SwordMan(250, 250)
-Plaster(250, 300)
+player.take_damage(12)
+meshok = Meshok(500, 350)
+PocketWatch(250, 300)
+PocketWatch(250, 350)
+PocketWatch(250, 400)
+PocketWatch(250, 450)
 # box
 for i in range(20):
     Wall(50 * i, 50)
@@ -38,15 +43,19 @@ while playing:
                 player.running = False
 
     all_sprites.update()
+    for i in delete_later:
+        if i.hitbox:
+            i.hitbox.kill()
+        i.kill()
 
     CAMERA.update(player)
 
     screen.fill(pygame.Color("grey"))
     all_sprites.draw(screen)
 
-    screen.blit(font.render(f" HP: {player.hp}", True, pygame.Color("white")), (50, 20))
-    screen.blit(font.render(f"FPS: {clock.get_fps()}", True, pygame.Color("white")), (50, 40))
-    screen.blit(font.render(f"FPS: {len(all_sprites)}", True, pygame.Color("white")), (50, 60))
-
+    screen.blit(font.render(f" HP: {meshok.hp}", True, pygame.Color("white")), (50, 20))
+    screen.blit(font.render(f" HP: {player.hp}", True, pygame.Color("white")), (200, 20))
+    screen.blit(font.render(f" ARMOR: {meshok.armor}", True, pygame.Color("white")), (50, 40))
+    screen.blit(font.render(f"FPS: {clock.get_fps()}", True, pygame.Color("white")), (50, 60))
     pygame.display.flip()
     clock.tick(FPS)

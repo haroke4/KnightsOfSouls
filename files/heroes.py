@@ -22,7 +22,7 @@ class BaseHero(BaseGameObject):
         self.velocity = pygame.Vector2(0, 0)
         super().__init__(x, y, image, [6, 35, 36, 15], PLAYER_TEAM)
         self.damage_multiplier = 1
-        self.has_candle = True  # для предмета "свеча"
+        self.has_candle = False  # для предмета "свеча"
         self.vampirism = 0  # FLOAT
 
     def key_input(self):
@@ -64,13 +64,14 @@ class BaseHero(BaseGameObject):
         if self.hitbox.get_colliding_objects(include_not_slidable_obj=False):
             self.global_y -= move_y
             self.hitbox.set_pos(self.global_x, self.global_y)
-
+        
         all_sprites.change_layer(self, self.global_y + self.rect.h)
         super().update()
 
     def take_damage(self, damage, from_candle=False):
         """from_candle НЕНАДО ставить TRUE. Это только для предмета свеча"""
         damage = damage * self.damage_multiplier - self.protection
+        print(damage, from_candle)
         if damage > 0:
             self.armor -= damage
             if self.armor < 0:
@@ -80,13 +81,18 @@ class BaseHero(BaseGameObject):
                 self.armor = 0
         if self.has_candle and not from_candle:
             # индикатор огня
-            Timer(1, self.take_damage, 1, True).start()
-            Timer(2, self.take_damage, 1, True).start()
+            Timer(1, self.take_damage, [1, True]).start()
+            Timer(2, self.take_damage, [1, True]).start()
+
+    def heal(self, value):
+        self.hp += value
+        if self.hp > self.max_hp:
+            self.hp = self.max_hp
 
     def increase_damage(self, value):  # увеличить урон
-        self.damage = value
+        self.damage += value
         if self.gun:
-            self.gun.damage = value
+            self.gun.damage += value
 
     def get_slowing_down_effect(self, time, value):  # 0.00 < value <= 1
         self.run_speed = self.initial_run_speed * value
@@ -97,7 +103,7 @@ class BaseHero(BaseGameObject):
         self.walk_speed = self.initial_walk_speed
 
     def die(self):
-        self.dead = True
+        super(BaseHero, self).die()
 
 
 class Spearman(BaseHero):
@@ -152,9 +158,15 @@ class Spear(BaseGameObject):
             for i in self.hitbox.get_colliding_objects():
                 if pygame.sprite.collide_mask(self.hitbox, i):
                     if hasattr(i.parent, "hp"):
-                        i.parent.take_damage(self.damage * 3 if random.randrange(1, 11) == 9 else self.damage)
-                        if i.parent.has_candle:
-                            pass  # надо учитывать что мобы могут быть убити
+                        dmg = self.damage * 3 if random.randrange(1, 11) == 9 else self.damage
+                        i.parent.take_damage(dmg)
+                        self.parent.heal(dmg * self.parent.vampirism)
+                        if self.parent.has_candle:
+                            Timer(1, i.parent.take_damage, [1, True]).start()
+                            Timer(2, i.parent.take_damage, [1, True]).start()
+                            Timer(3, i.parent.take_damage, [1, True]).start()
+                            Timer(4, i.parent.take_damage, [1, True]).start()
+                            Timer(5, i.parent.take_damage, [1, True]).start()
                     self.die()
         else:
             self.look_at_mouse()
@@ -172,6 +184,7 @@ class MagicMan(BaseHero):
         self.attack_range = data["attack_range"]
         super().__init__(x, y, data["img"], data["hp"], data["armor"], data["protection"], data["walk_speed"],
                          data["run_speed"], data["attack_cooldown"], data["damage"])
+        super().update()
 
     def attack(self, x, y):
         if self.can_shot:
@@ -180,7 +193,7 @@ class MagicMan(BaseHero):
             if vector.length() >= self.attack_range:
                 vector = vector.normalize() * self.attack_range + (self.global_x, self.global_y)
                 x, y = vector.x, vector.y
-            fire = MagicManFire(x, y, self.damage, self.team)
+            fire = MagicManFire(x, y, self.damage, self.team, self)
             self.can_shot = False
             Timer(self.attack_cooldown, self.enable_shot).start()
             Timer(self.attack_cooldown, fire.die).start()
@@ -190,10 +203,11 @@ class MagicMan(BaseHero):
 
 
 class MagicManFire(BaseGameObject):
-    def __init__(self, x, y, damage, team):
+    def __init__(self, x, y, damage, team, parent):
         self.damage = damage
+        self.parent = parent
         self.damage_taken = []
-        super().__init__(x - 50, y - 20, units_characteristics.magicman["gun_img"], HITBOX_FULL_RECT, team)
+        super().__init__(x - 50, y - 20, units_characteristics.magicman["gun_img"], HITBOX_FULL_RECT, team, False)
         all_sprites.change_layer(self, 0)
 
     def update(self):
@@ -202,14 +216,21 @@ class MagicManFire(BaseGameObject):
                 continue
             if hasattr(i.parent, "hp"):
                 i.parent.take_damage(self.damage)
+                self.parent.heal(self.damage * self.parent.vampirism)
                 # i.parent.get_slowing_down_effect(time, percent)
+                if self.parent.has_candle:
+                    Timer(1, i.parent.take_damage, [1, True]).start()
+                    Timer(2, i.parent.take_damage, [1, True]).start()
+                    Timer(3, i.parent.take_damage, [1, True]).start()
+                    Timer(4, i.parent.take_damage, [1, True]).start()
+                    Timer(5, i.parent.take_damage, [1, True]).start()
             self.damage_taken.append(i)
         super().update()
 
 
 class SwordMan(BaseHero):
     def __init__(self, x=0, y=0):
-        data = units_characteristics.spearman
+        data = units_characteristics.swordman
         self.can_attack = True
         self.dash_length = 30
         super().__init__(x, y, data["img"], data["hp"], data["armor"], data["protection"], data["walk_speed"],
@@ -223,7 +244,7 @@ class SwordMan(BaseHero):
         if self.can_attack:
             self.gun.attack()
             self.can_attack = False
-            Timer(1, self.enable_attack).start()
+            Timer(self.attack_cooldown, self.enable_attack).start()
 
 
 class Sword(BaseGameObject):
@@ -259,7 +280,6 @@ class Sword(BaseGameObject):
     def update(self):
         all_sprites.change_layer(self, self.hitbox.rect.bottom)
         if self.attacking:
-
             self.global_x += self.vector.x * 10
             self.global_y += self.vector.y * 10
             for i in self.hitbox.get_colliding_objects():
@@ -267,10 +287,30 @@ class Sword(BaseGameObject):
                     if pygame.sprite.collide_mask(self.hitbox, i):
                         if hasattr(i.parent, "hp"):
                             i.parent.take_damage(self.damage)
+                            self.parent.heal(self.damage * self.parent.vampirism)
+                            if self.parent.has_candle:
+                                Timer(1, i.parent.take_damage, [1, True]).start()
+                                Timer(2, i.parent.take_damage, [1, True]).start()
+                                Timer(3, i.parent.take_damage, [1, True]).start()
+                                Timer(4, i.parent.take_damage, [1, True]).start()
+                                Timer(5, i.parent.take_damage, [1, True]).start()
                         self.damage_taken.append(i)
+
         else:
             self.look_at_mouse()
             self.set_pos(self.parent.global_x + 40 * math.cos(self.angle / 180 * math.pi) + 3,
                          self.parent.global_y - 40 * math.sin(self.angle / 180 * math.pi) + 20)
         self.hitbox.set_pos(self.global_x, self.global_y)
         super().update()
+
+
+class Meshok(BaseHero):
+    def __init__(self, x, y):
+        data = units_characteristics.spearman
+        super().__init__(x, y, data["img"], data["hp"], data["armor"], data["protection"], data["walk_speed"],
+                         data["run_speed"], data["attack_cooldown"], data["damage"])
+        self.team = None
+        self.hitbox.team = None
+
+    def key_input(self):
+        pass
