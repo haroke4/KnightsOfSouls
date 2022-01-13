@@ -1,5 +1,6 @@
 from files.global_stuff import *
-from files.heroes import Spearman
+from files.heroes import *
+from files.items import Plaster
 from files.environment_classes import MovingWall, Wall
 
 print(WIDTH, HEIGHT)
@@ -9,8 +10,8 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
 clock = pygame.time.Clock()
 font = pygame.font.Font(None, 25)
 
-player = Spearman(250, 250)
-
+player = SwordMan(250, 250)
+Plaster(250, 300)
 # box
 for i in range(20):
     Wall(50 * i, 50)
@@ -43,8 +44,9 @@ while playing:
     screen.fill(pygame.Color("grey"))
     all_sprites.draw(screen)
 
-    screen.blit(font.render(f" HP: {player.heath}", True, pygame.Color("white")), (50, 20))
+    screen.blit(font.render(f" HP: {player.hp}", True, pygame.Color("white")), (50, 20))
     screen.blit(font.render(f"FPS: {clock.get_fps()}", True, pygame.Color("white")), (50, 40))
+    screen.blit(font.render(f"FPS: {len(all_sprites)}", True, pygame.Color("white")), (50, 60))
 
     pygame.display.flip()
     clock.tick(FPS)
