@@ -89,10 +89,7 @@ class BaseGameObject(pygame.sprite.Sprite):
         self.rect.x, self.rect.y = [int(i) for i in from_global_to_local_pos(self.global_x, self.global_y)]
 
     def die(self):
-        if self.hitbox:
-            self.hitbox.kill()
-        self.kill()
-
+        delete_later.append(self)
 
 ctypes.windll.user32.SetProcessDPIAware()
 true_res = (ctypes.windll.user32.GetSystemMetrics(0), ctypes.windll.user32.GetSystemMetrics(1))
@@ -106,6 +103,6 @@ HEIGHT = true_res[1]
 
 all_sprites = pygame.sprite.LayeredUpdates()
 hitbox_group = pygame.sprite.Group()
-enemy_group = pygame.sprite.Group()
+delete_later = []
 
 CAMERA = Camera()
