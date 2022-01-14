@@ -1,5 +1,3 @@
-import pygame
-
 from files.global_stuff import *
 from files.heroes import BaseHero
 from threading import Timer
@@ -147,13 +145,36 @@ class WeightingStone(BaseItem):
 
 class CursedBlood(BaseItem):
     def __init__(self, x, y):
-        """Класс сделан! А у самих героев вампиризм не реализован!!"""
         super().__init__(x, y, "CursedBlood.png")
 
     def give_effect(self, obj):
         obj.vampirism += 0.1
         obj.max_hp -= 3
         obj.hp -= 3
+        self.die()
+
+
+class Cross(BaseItem):
+    def __init__(self, x, y):
+        super().__init__(x, y, "Cross.png")
+
+    def give_effect(self, obj):
+        obj.has_cross = True
+        self.die()
+
+
+class WeldingHelmet(BaseItem):
+    def __init__(self, x, y):
+        super().__init__(x, y, "WeldingHelmet.png")
+
+    def give_effect(self, obj):
+        obj.walk_speed -= 0.5
+        obj.run_speed -= 0.5
+        obj.protection += 2
+        obj.armor += 10
+        obj.max_armor += 10
+        obj.has_welding_helmet = True
+        change_draw_area(500, 220, 1400, 820)
         self.die()
 
 
@@ -174,13 +195,12 @@ class TwinMirror(BaseItem):
 
     def update(self):
         if self.status:
-            if self.status == 1:
-                self.owner.obj.damage_multiplier = 0
-                if not self.status_changed:
-                    self.status_changed = True
-                    Timer(5, self.change_status, [2]).start()
-            else:
-                self.owner.damage_multiplier = 1
-                if not self.status_changed:
-                    self.status_changed = True
-                    Timer(10, self.change_status, [1]).start()
+            if self.status == 1 and not self.status_changed:
+                self.owner.change_damage_multiplier(0)
+                self.status_changed = True
+                Timer(5, self.change_status, [2]).start()
+
+            elif self.status == 2 and not self.status_changed:
+                self.owner.change_damage_multiplier(2)
+                self.status_changed = True
+                Timer(10, self.change_status, [1]).start()

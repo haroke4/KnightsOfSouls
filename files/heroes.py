@@ -23,7 +23,9 @@ class BaseHero(BaseGameObject):
         super().__init__(x, y, image, [6, 35, 36, 15], PLAYER_TEAM)
         self.damage_multiplier = 1
         self.has_candle = False  # для предмета "свеча"
+        self.has_cross = False  # for item Cross
         self.vampirism = 0  # FLOAT
+        self.has_welding_helmet = False
 
     def key_input(self):
         keystates = pygame.key.get_pressed()
@@ -64,7 +66,7 @@ class BaseHero(BaseGameObject):
         if self.hitbox.get_colliding_objects(include_not_slidable_obj=False):
             self.global_y -= move_y
             self.hitbox.set_pos(self.global_x, self.global_y)
-        
+
         all_sprites.change_layer(self, self.global_y + self.rect.h)
         super().update()
 
@@ -76,8 +78,17 @@ class BaseHero(BaseGameObject):
             self.armor -= damage
             if self.armor < 0:
                 self.hp -= abs(self.armor)
+
                 if self.hp <= 0:
-                    self.die()
+                    if self.has_cross:  # если есть крест не убиваем
+                        self.hp = self.max_hp
+                        self.armor = self.max_armor
+                        self.damage_multiplier = 0  # дается бессмертие на 3 секунды
+                        self.has_cross = False
+                        Timer(3, self.change_damage_multiplier, [1]).start()  # убираем бессмертие
+
+                    else:
+                        self.die()
                 self.armor = 0
         if self.has_candle and not from_candle:
             # индикатор огня
@@ -94,6 +105,9 @@ class BaseHero(BaseGameObject):
         if self.gun:
             self.gun.damage += value
 
+    def change_damage_multiplier(self, val):
+        self.damage_multiplier = val
+
     def get_slowing_down_effect(self, time, value):  # 0.00 < value <= 1
         self.run_speed = self.initial_run_speed * value
         self.walk_speed = self.initial_walk_speed
@@ -101,9 +115,6 @@ class BaseHero(BaseGameObject):
     def remove_slowing_down_effect(self):
         self.run_speed = self.initial_run_speed
         self.walk_speed = self.initial_walk_speed
-
-    def die(self):
-        super(BaseHero, self).die()
 
 
 class Spearman(BaseHero):

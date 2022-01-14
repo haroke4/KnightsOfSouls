@@ -14,6 +14,21 @@ def from_global_to_local_pos(global_x, global_y):
     return global_x + CAMERA.all_x_offset, global_y + CAMERA.all_y_offset
 
 
+def change_draw_area(new_left, new_top, new_right, new_bottom):
+    draw_area["l"] = new_left
+    draw_area["t"] = new_top
+    draw_area["r"] = new_right
+    draw_area["b"] = new_bottom
+
+
+class LayeredUpdates(pygame.sprite.LayeredUpdates):
+    def draw(self, surface: pygame.Surface):
+        for sprite in self.sprites():
+            if not (sprite.rect.right < draw_area["l"] or sprite.rect.left > draw_area["r"] or
+                    sprite.rect.bottom < draw_area["t"] or sprite.rect.top > draw_area["b"]):
+                surface.blit(sprite.image, sprite.rect)
+
+
 class Hitbox(pygame.sprite.Sprite):
     def __init__(self, dx, dy, width, height, parent, can_slide):
         super().__init__(hitbox_group, all_sprites)  # add second argument "all_sprites" to show image of hitbox
@@ -47,17 +62,18 @@ class Camera:
         self.all_x_offset = self.all_y_offset = 0
 
     def update(self, target):
-        self.dx = -(target.rect.x + target.rect.w // 2 - WIDTH // 2)
-        self.dy = -(target.rect.y + target.rect.h // 2 - HEIGHT // 2)
-        if self.dx < -1 or self.dx > 1:
-            self.dx = self.dx * 0.01 if not -self.min_speed < self.dx * 0.01 < self.min_speed else \
-                self.min_speed * self.dx / abs(self.dx)
-        if self.dy < -1 or self.dy > 1:
-            self.dy = self.dy * 0.01 if not -self.min_speed < self.dy * 0.01 < self.min_speed else \
-                self.min_speed * self.dy / abs(self.dy)
+        if target.alive():
+            self.dx = -(target.rect.x + target.rect.w // 2 - WIDTH // 2)
+            self.dy = -(target.rect.y + target.rect.h // 2 - HEIGHT // 2)
+            if self.dx < -1 or self.dx > 1:
+                self.dx = self.dx * 0.01 if not -self.min_speed < self.dx * 0.01 < self.min_speed else \
+                    self.min_speed * self.dx / abs(self.dx)
+            if self.dy < -1 or self.dy > 1:
+                self.dy = self.dy * 0.01 if not -self.min_speed < self.dy * 0.01 < self.min_speed else \
+                    self.min_speed * self.dy / abs(self.dy)
 
-        self.all_x_offset += self.dx
-        self.all_y_offset += self.dy
+            self.all_x_offset += self.dx
+            self.all_y_offset += self.dy
 
 
 class BaseGameObject(pygame.sprite.Sprite):
@@ -103,8 +119,9 @@ FPS = 100
 WIDTH = true_res[0]
 HEIGHT = true_res[1]
 
-all_sprites = pygame.sprite.LayeredUpdates()
+all_sprites = LayeredUpdates()
 hitbox_group = pygame.sprite.Group()
 delete_later = []
+draw_area = {"l": 0, "t": 0, "r": WIDTH, "b": HEIGHT} # left top right bottom
 
 CAMERA = Camera()
