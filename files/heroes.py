@@ -8,7 +8,7 @@ from threading import Timer
 
 
 class BaseHero(BaseGameObject):
-    def __init__(self, x, y, image, hp, armor, protection, walk_speed, run_speed, attack_cooldown, damage):
+    def __init__(self, x, y, image, hp, armor, protection, walk_speed, run_speed, attack_cooldown, damage, anim_folder):
         self.dead = False
         self.max_hp = self.hp = hp
         self.max_armor = self.armor = armor
@@ -27,6 +27,12 @@ class BaseHero(BaseGameObject):
         self.vampirism = 0  # FLOAT
         self.has_welding_helmet = False
 
+        # настройка анимаций
+        self.add_animation('up', anim_folder + '/up')
+        self.add_animation('left', anim_folder + '/left')
+        self.add_animation('right', anim_folder + '/right')
+        self.add_animation('down', anim_folder + '/down')
+
     def key_input(self):
         keystates = pygame.key.get_pressed()
         self.velocity.x = self.velocity.y = 0
@@ -44,6 +50,20 @@ class BaseHero(BaseGameObject):
         if pygame.mouse.get_pressed()[0]:
             self.running = False
             self.attack(*pygame.mouse.get_pos())
+
+        if self.velocity.length() == 0:
+            self.stop_animation()
+            return
+
+        if self.velocity.y > 0 and self.velocity.x == 0:
+            self.play_animation("down")
+        elif self.velocity.y < 0 and self.velocity.x == 0:
+            self.play_animation("up")
+
+        if self.velocity.x > 0:
+            self.play_animation("right")
+        elif self.velocity.x < 0:
+            self.play_animation("left")
 
     def attack(self, x, y):  # Чтобы ошибка не возникала
         pass
@@ -117,11 +137,11 @@ class BaseHero(BaseGameObject):
         self.walk_speed = self.initial_walk_speed
 
 
-class Spearman(BaseHero):
+class SpearMan(BaseHero):
     def __init__(self, x=0, y=0):
         data = units_characteristics.spearman
         super().__init__(x, y, data["img"], data["hp"], data["armor"], data["protection"], data["walk_speed"],
-                         data["run_speed"], data["attack_cooldown"], data["damage"])
+                         data["run_speed"], data["attack_cooldown"], data["damage"], 'SpearMan')
         self.gun = Spear(x, y, self.team, data["damage"], self)
         self.spear_dx, self.spear_dy = 30, 5
 
@@ -137,7 +157,7 @@ class Spearman(BaseHero):
 
 
 class Spear(BaseGameObject):
-    def __init__(self, x, y, team, damage, parent: Spearman):
+    def __init__(self, x, y, team, damage, parent: SpearMan):
         self.damage = damage
         self.parent = parent
         self.angle = 0
@@ -194,7 +214,7 @@ class MagicMan(BaseHero):
         self.can_shot = True
         self.attack_range = data["attack_range"]
         super().__init__(x, y, data["img"], data["hp"], data["armor"], data["protection"], data["walk_speed"],
-                         data["run_speed"], data["attack_cooldown"], data["damage"])
+                         data["run_speed"], data["attack_cooldown"], data["damage"], 'MagicMan')
         super().update()
 
     def attack(self, x, y):
@@ -245,7 +265,7 @@ class SwordMan(BaseHero):
         self.can_attack = True
         self.dash_length = 30
         super().__init__(x, y, data["img"], data["hp"], data["armor"], data["protection"], data["walk_speed"],
-                         data["run_speed"], data["attack_cooldown"], data["damage"])
+                         data["run_speed"], data["attack_cooldown"], data["damage"], 'SwordMan')
         self.gun = Sword(x, y, self.damage, self.team, self)
 
     def enable_attack(self):
@@ -319,7 +339,7 @@ class Meshok(BaseHero):
     def __init__(self, x, y):
         data = units_characteristics.spearman
         super().__init__(x, y, data["img"], data["hp"], data["armor"], data["protection"], data["walk_speed"],
-                         data["run_speed"], data["attack_cooldown"], data["damage"])
+                         data["run_speed"], data["attack_cooldown"], data["damage"], 'SpearMan')
         self.team = None
         self.hitbox.team = None
 

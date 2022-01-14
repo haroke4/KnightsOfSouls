@@ -3,7 +3,6 @@
 """
 import pygame
 import ctypes
-import sqlite3
 
 
 def from_local_to_global_pos(x, y):
@@ -83,6 +82,9 @@ class BaseGameObject(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.global_x, self.global_y = x, y
         self.team = team
+        self.__animations = {}  # structure {"name-of-animation": ['loaded_image'... ]}
+        self.__current_animation = None
+        self.__animation_counter = 0
 
         if hitbox:
             if hitbox == HITBOX_ARROW:
@@ -97,6 +99,51 @@ class BaseGameObject(pygame.sprite.Sprite):
 
         super().__init__(all_sprites)
         all_sprites.change_layer(self, self.global_y + self.rect.h)
+
+    def add_animation(self, name, path):
+        """
+        Adds the animation
+        name - name of animation [string]
+        path - path to folder with frames of animation [string]
+        Example:
+             name - up
+             path - Spearman/up
+        """
+        self.__animations[name] = []
+        counter = 1
+        while True:
+            try:
+                frame = pygame.image.load(f'files/img/{path}/{counter}.png')
+                self.__animations[name].append(frame)
+                counter += 1
+            except FileNotFoundError:
+                break
+
+    def play_animation(self, name: str):
+        """ Plays an animation with the name 'name'
+            This can be called even if the current animation is an animation with the name 'name'
+        """
+        if self.__current_animation != name:
+            self.__animation_counter = 0
+            self.__current_animation = name
+            if not (self in play_animation_group):
+                play_animation_group.append(self)
+
+    def stop_animation(self):
+        """Stops the current animation"""
+        if self.__current_animation:
+            self.image = self.__animations[self.__current_animation][0]
+            self.__current_animation = None
+            play_animation_group.remove(self)
+
+    def change_image(self):
+        self.image = self.__animations[self.__current_animation][self.__animation_counter]
+        self.__animation_counter += 1
+        if self.__animation_counter >= len(self.__animations[self.__current_animation]):
+            self.__animation_counter = 0
+
+    def get_current_animation(self):
+        return self.__current_animation
 
     def set_pos(self, glob_x, glob_y):
         self.global_x, self.global_y = glob_x, glob_y
@@ -122,6 +169,7 @@ HEIGHT = true_res[1]
 all_sprites = LayeredUpdates()
 hitbox_group = pygame.sprite.Group()
 delete_later = []
-draw_area = {"l": 0, "t": 0, "r": WIDTH, "b": HEIGHT} # left top right bottom
+play_animation_group = []
+draw_area = {"l": 0, "t": 0, "r": WIDTH, "b": HEIGHT}  # left top right bottom
 
 CAMERA = Camera()

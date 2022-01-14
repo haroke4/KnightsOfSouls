@@ -11,8 +11,10 @@ pygame.mixer.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
 clock = pygame.time.Clock()
 font = pygame.font.Font(None, 25)
+PLAY_ANIMATION = pygame.USEREVENT + 1
+pygame.time.set_timer(PLAY_ANIMATION, 100)
 
-player = Spearman(250, 250)
+player = MagicMan(250, 250)
 meshok = Meshok(500, 350)
 WeldingHelmet(300, 300)
 
@@ -32,13 +34,21 @@ while playing:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             playing = False
+
+        elif event.type == PLAY_ANIMATION:
+            for _obj in play_animation_group:
+                _obj.change_image()
+
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_q:
                 playing = False
+
             elif event.key == pygame.K_LSHIFT:
                 player.running = True
+
             elif event.key == pygame.K_i:
                 player.take_damage(99)
+
         elif event.type == pygame.KEYUP:
             if event.key == pygame.K_LSHIFT:
                 player.running = False
