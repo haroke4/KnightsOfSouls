@@ -1,10 +1,10 @@
 import random
-
 import pygame.mouse
 import math
+from threading import Timer
 from files import units_characteristics
 from files.global_stuff import *
-from threading import Timer
+from files.particles import SquareParticle
 
 
 class BaseHero(BaseGameObject):
@@ -26,6 +26,7 @@ class BaseHero(BaseGameObject):
         self.has_cross = False  # for item Cross
         self.vampirism = 0  # FLOAT
         self.has_welding_helmet = False
+        self.slowing_down_effect_timer = None
 
         # настройка анимаций
         self.add_animation('up', anim_folder + '/up')
@@ -90,7 +91,7 @@ class BaseHero(BaseGameObject):
         all_sprites.change_layer(self, self.global_y + self.rect.h)
         super().update()
 
-    def take_damage(self, damage, from_candle=False):
+    def take_damage(self, damage, from_candle=False, count_of_particles=10):
         """from_candle НЕНАДО ставить TRUE. Это только для предмета свеча"""
         damage = damage * self.damage_multiplier - self.protection
         print(damage, from_candle)
@@ -106,14 +107,21 @@ class BaseHero(BaseGameObject):
                         self.damage_multiplier = 0  # дается бессмертие на 3 секунды
                         self.has_cross = False
                         Timer(3, self.change_damage_multiplier, [1]).start()  # убираем бессмертие
-
                     else:
                         self.die()
                 self.armor = 0
+
         if self.has_candle and not from_candle:
             # индикатор огня
             Timer(1, self.take_damage, [1, True]).start()
             Timer(2, self.take_damage, [1, True]).start()
+
+        if from_candle:
+            SquareParticle.create_particles(self.global_x + self.rect.w // 2, self.global_y + self.rect.h // 2,
+                                            pygame.Color("orange"), count_of_particles)
+        else:
+            SquareParticle.create_particles(self.global_x + self.rect.w // 2, self.global_y + self.rect.h // 2,
+                                            pygame.Color("red"), count_of_particles)
 
     def heal(self, value):
         self.hp += value
@@ -130,7 +138,10 @@ class BaseHero(BaseGameObject):
 
     def get_slowing_down_effect(self, time, value):  # 0.00 < value <= 1
         self.run_speed = self.initial_run_speed * value
-        self.walk_speed = self.initial_walk_speed
+        self.walk_speed = self.initial_walk_speed * value
+        if self.slowing_down_effect_timer:
+            self.slowing_down_effect_timer.cancel()
+            self.slowing_down_effect_timer = Timer(time, self.remove_slowing_down_effect)
 
     def remove_slowing_down_effect(self):
         self.run_speed = self.initial_run_speed
@@ -190,14 +201,21 @@ class Spear(BaseGameObject):
                 if pygame.sprite.collide_mask(self.hitbox, i):
                     if hasattr(i.parent, "hp"):
                         dmg = self.damage * 3 if random.randrange(1, 11) == 9 else self.damage
-                        i.parent.take_damage(dmg)
                         self.parent.heal(dmg * self.parent.vampirism)
+                        if dmg == self.damage * 3:
+                            i.parent.take_damage(dmg, 30)
+                        else:
+                            i.parent.take_damage(dmg)
+
                         if self.parent.has_candle:
                             Timer(1, i.parent.take_damage, [1, True]).start()
                             Timer(2, i.parent.take_damage, [1, True]).start()
                             Timer(3, i.parent.take_damage, [1, True]).start()
                             Timer(4, i.parent.take_damage, [1, True]).start()
                             Timer(5, i.parent.take_damage, [1, True]).start()
+                    else:
+                        SquareParticle.create_particles(self.global_x, self.global_y,
+                                                        pygame.transform.average_color(i.parent.image))
                     self.die()
         else:
             self.look_at_mouse()
@@ -247,14 +265,14 @@ class MagicManFire(BaseGameObject):
                 continue
             if hasattr(i.parent, "hp"):
                 i.parent.take_damage(self.damage)
-                self.parent.heal(self.damage * self.parent.vampirism)
-                # i.parent.get_slowing_down_effect(time, percent)
+                i.parent.get_slowing_down_effect(time=2, value=0.5)
                 if self.parent.has_candle:
                     Timer(1, i.parent.take_damage, [1, True]).start()
                     Timer(2, i.parent.take_damage, [1, True]).start()
                     Timer(3, i.parent.take_damage, [1, True]).start()
                     Timer(4, i.parent.take_damage, [1, True]).start()
                     Timer(5, i.parent.take_damage, [1, True]).start()
+                self.parent.heal(self.damage * self.parent.vampirism)
             self.damage_taken.append(i)
         super().update()
 

@@ -30,7 +30,7 @@ class LayeredUpdates(pygame.sprite.LayeredUpdates):
 
 class Hitbox(pygame.sprite.Sprite):
     def __init__(self, dx, dy, width, height, parent, can_slide):
-        super().__init__(hitbox_group, all_sprites)  # add second argument "all_sprites" to show image of hitbox
+        super().__init__(hitbox_group)  # add second argument "all_sprites" to show image of hitbox
         self.rect = pygame.Rect(0, 0, width, height)
         self.image = pygame.Surface((width, height))
         self.image.fill(pygame.Color("red"))
@@ -167,6 +167,7 @@ WIDTH = true_res[0]
 HEIGHT = true_res[1]
 
 all_sprites = LayeredUpdates()
+particle_group = pygame.sprite.Group()
 hitbox_group = pygame.sprite.Group()
 delete_later = []
 play_animation_group = []

@@ -14,7 +14,7 @@ font = pygame.font.Font(None, 25)
 PLAY_ANIMATION = pygame.USEREVENT + 1
 pygame.time.set_timer(PLAY_ANIMATION, 100)
 
-player = MagicMan(250, 250)
+player = SpearMan(250, 250)
 meshok = Meshok(500, 350)
 WeldingHelmet(300, 300)
 
@@ -54,14 +54,18 @@ while playing:
                 player.running = False
 
     all_sprites.update()
+    particle_group.update()
+
     for i in delete_later:
         if i.hitbox:
             i.hitbox.kill()
         i.kill()
 
     CAMERA.update(player)
+
     screen.fill(pygame.Color("grey"))
     all_sprites.draw(screen)
+    particle_group.draw(screen)
 
     if player.has_welding_helmet:  # это все для ПРЕДМЕТА сварочный шлем
         pygame.draw.rect(screen, pygame.Color("black"), [0, 0, draw_area['l'], HEIGHT])

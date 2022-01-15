@@ -1,6 +1,5 @@
 from files.global_stuff import *
 from files.heroes import BaseHero
-from threading import Timer
 
 
 class BaseItem(BaseGameObject):
