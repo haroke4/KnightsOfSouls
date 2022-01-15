@@ -4,7 +4,7 @@
 # HEROES
 spearman = {
     "name": "Копейщик",
-    "img": "abobus.png",
+    "img": "SpearMan/down/1.png",
     "gun_img": "arrow.png",
     "hp": 6,
     "armor": 5,
@@ -17,7 +17,7 @@ spearman = {
 }
 magicman = {
     "name": "Ледяной колдун",
-    "img": "abobus.png",
+    "img": "MagicMan/down/1.png",
     "gun_img": "magicman_fire.png",
     "hp": 7,
     "armor": 7,
@@ -31,7 +31,7 @@ magicman = {
 }
 swordman = {
     "name": "Фихтовальщик",
-    "img": "abobus.png",
+    "img": "SwordMan/down/1.png",
     "gun_img": "sword.png",
     "hp": 5,
     "armor": 10,
