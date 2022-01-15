@@ -2,6 +2,7 @@ import pygame
 
 from files.global_stuff import *
 from files.heroes import *
+from files.enemies import *
 from files.items import *
 from files.environment_classes import MovingWall, Wall
 
@@ -14,9 +15,11 @@ font = pygame.font.Font(None, 25)
 PLAY_ANIMATION = pygame.USEREVENT + 1
 pygame.time.set_timer(PLAY_ANIMATION, 100)
 
-player = SpearMan(250, 250)
-meshok = Meshok(500, 350)
-WeldingHelmet(300, 300)
+player = SwordMan(250, 250)
+enemy = TestEnemy(450, 300, player)
+TestEnemy(120, 120, player)
+TestEnemy(170, 120, player)
+TestEnemy(200, 120, player)
 
 # box
 for i in range(20):
@@ -76,10 +79,10 @@ while playing:
                          [draw_area['l'], draw_area['b'], draw_area['r'] - draw_area['l'],
                           draw_area['b'] - draw_area['t']])
 
-    screen.blit(font.render(f" HP: {meshok.hp}", True, pygame.Color("white")), (50, 20))
-    screen.blit(font.render(f" HP: {player.hp}", True, pygame.Color("white")), (200, 20))
-    screen.blit(font.render(f" ARMOR: {meshok.armor}", True, pygame.Color("white")), (50, 40))
+    screen.blit(font.render(f" HP: {player.hp}", True, pygame.Color("white")), (50, 20))
+    screen.blit(font.render(f" ENEMY HP: {enemy.hp}", True, pygame.Color("white")), (50, 40))
     screen.blit(font.render(f"FPS: {clock.get_fps()}", True, pygame.Color("white")), (50, 60))
     pygame.display.flip()
 
     clock.tick(FPS)
+

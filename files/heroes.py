@@ -27,6 +27,7 @@ class BaseHero(BaseGameObject):
         self.vampirism = 0  # FLOAT
         self.has_welding_helmet = False
         self.slowing_down_effect_timer = None
+        self.timers = []
 
         # настройка анимаций
         self.add_animation('up', anim_folder + '/up')
@@ -141,7 +142,8 @@ class BaseHero(BaseGameObject):
         self.walk_speed = self.initial_walk_speed * value
         if self.slowing_down_effect_timer:
             self.slowing_down_effect_timer.cancel()
-            self.slowing_down_effect_timer = Timer(time, self.remove_slowing_down_effect)
+        self.slowing_down_effect_timer = Timer(time, self.remove_slowing_down_effect)
+        self.slowing_down_effect_timer.start()
 
     def remove_slowing_down_effect(self):
         self.run_speed = self.initial_run_speed
@@ -154,17 +156,26 @@ class SpearMan(BaseHero):
         super().__init__(x, y, data["img"], data["hp"], data["armor"], data["protection"], data["walk_speed"],
                          data["run_speed"], data["attack_cooldown"], data["damage"], 'SpearMan')
         self.gun = Spear(x, y, self.team, data["damage"], self)
+        self.new_spear_timer = None
         self.spear_dx, self.spear_dy = 30, 5
 
     def attack(self, x, y):
         if self.gun:
             self.gun.shot()
             self.gun = None
-            Timer(self.attack_cooldown, self.new_spear).start()
+            self.new_spear_timer = Timer(self.attack_cooldown, self.new_spear)
+            self.new_spear_timer.start()
 
     def new_spear(self):
         self.gun = Spear(self.global_x, self.global_y, self.team, self.damage, self)
         self.gun.update()
+
+    def die(self):
+        if self.new_spear_timer:
+            self.new_spear_timer.cancel()
+        if self.gun:
+            self.gun.die()
+        super(SpearMan, self).die()
 
 
 class Spear(BaseGameObject):
@@ -176,7 +187,7 @@ class Spear(BaseGameObject):
         self.shooted = False
         self.vector = pygame.Vector2(0, 0)
 
-        super().__init__(x, y, units_characteristics.spearman['gun_img'], hitbox=HITBOX_ARROW, team=team)
+        super().__init__(x, y, units_characteristics.spearman['gun_img'], HITBOX_ARROW, team, False)
         self.orig_image = self.image
 
     def shot(self):
@@ -285,6 +296,7 @@ class SwordMan(BaseHero):
         super().__init__(x, y, data["img"], data["hp"], data["armor"], data["protection"], data["walk_speed"],
                          data["run_speed"], data["attack_cooldown"], data["damage"], 'SwordMan')
         self.gun = Sword(x, y, self.damage, self.team, self)
+        self.can_attack_timer = None
 
     def enable_attack(self):
         self.can_attack = True
@@ -293,7 +305,14 @@ class SwordMan(BaseHero):
         if self.can_attack:
             self.gun.attack()
             self.can_attack = False
-            Timer(self.attack_cooldown, self.enable_attack).start()
+            self.can_attack_timer = Timer(self.attack_cooldown, self.enable_attack).start()
+
+    def die(self):
+        if self.can_attack_timer:
+            self.can_attack_timer.cancel()
+        if self.gun:
+            self.gun.die()
+        super().die()
 
 
 class Sword(BaseGameObject):
@@ -304,7 +323,7 @@ class Sword(BaseGameObject):
         self.attacking = False
         self.angle = 0
         self.vector = pygame.Vector2(0, 0)
-        super().__init__(x - 50, y - 20, units_characteristics.swordman["gun_img"], HITBOX_ARROW, team)
+        super().__init__(x - 50, y - 20, units_characteristics.swordman["gun_img"], HITBOX_ARROW, team, True)
         self.orig_image = self.image
         all_sprites.change_layer(self, 0)
 

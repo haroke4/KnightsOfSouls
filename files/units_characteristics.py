@@ -45,15 +45,14 @@ swordman = {
 }
 
 # ENEMY
-goblin = {
-    "name": "Маленький гоблин",
+mini_golem = {
+    "name": "Мини-голем",
     "img": "abobus.png",
-    "hp": 1,
-    "armor": 0,
-    "run_speed": 2.5,
-    "attack_cooldown": 2.5,
+    "hp": 6,
+    "armor": 6,
+    "protection": 0,
+    "speed": 1,
+    "attack_cooldown": 2,
     "damage": 2,
+    "attack_distance": 100,
 }
-
-
-
