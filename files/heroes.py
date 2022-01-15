@@ -203,7 +203,7 @@ class Spear(BaseGameObject):
                         dmg = self.damage * 3 if random.randrange(1, 11) == 9 else self.damage
                         self.parent.heal(dmg * self.parent.vampirism)
                         if dmg == self.damage * 3:
-                            i.parent.take_damage(dmg, 30)
+                            i.parent.take_damage(dmg, count_of_particles=30)
                         else:
                             i.parent.take_damage(dmg)
 

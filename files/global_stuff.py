@@ -167,7 +167,7 @@ WIDTH = true_res[0]
 HEIGHT = true_res[1]
 
 all_sprites = LayeredUpdates()
-particle_group = pygame.sprite.Group()
+particle_group = LayeredUpdates()
 hitbox_group = pygame.sprite.Group()
 delete_later = []
 play_animation_group = []
