@@ -115,13 +115,13 @@ class BaseHero(BaseGameObject):
             # индикатор огня
             Timer(1, self.take_damage, [1, True]).start()
             Timer(2, self.take_damage, [1, True]).start()
-
-        if from_candle:
-            SquareParticle.create_particles(self.global_x + self.rect.w // 2, self.global_y + self.rect.h // 2,
-                                            pygame.Color("orange"), count_of_particles)
-        else:
-            SquareParticle.create_particles(self.global_x + self.rect.w // 2, self.global_y + self.rect.h // 2,
-                                            pygame.Color("red"), count_of_particles)
+        if self.alive():
+            if from_candle:
+                SquareParticle.create_particles(self.global_x + self.rect.w // 2, self.global_y + self.rect.h // 2,
+                                                pygame.Color("orange"), count_of_particles)
+            else:
+                SquareParticle.create_particles(self.global_x + self.rect.w // 2, self.global_y + self.rect.h // 2,
+                                                pygame.Color("red"), count_of_particles)
 
     def heal(self, value):
         self.hp += value
