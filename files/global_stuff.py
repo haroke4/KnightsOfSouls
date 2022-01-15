@@ -92,6 +92,19 @@ class BaseGameObject(pygame.sprite.Sprite):
         delete_later.append(self)
 
 
+class GameManager:
+    def __init__(self, player=None):
+        self.player = player
+        self.player_position = [0, 0]
+
+    def get_player_position(self):
+        self.player_position = [self.player.global_x, self.player.global_y]
+        return [self.player.global_x, self.player.global_y]
+
+    def update(self):
+        self.get_player_position()
+
+
 ctypes.windll.user32.SetProcessDPIAware()
 true_res = (ctypes.windll.user32.GetSystemMetrics(0), ctypes.windll.user32.GetSystemMetrics(1))
 

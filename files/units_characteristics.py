@@ -47,7 +47,7 @@ swordman = {
 # ENEMY
 goblin = {
     "name": "Маленький гоблин",
-    "img": ".png",
+    "img": "abobus.png",
     "hp": 1,
     "armor": 0,
     "run_speed": 2.5,
