@@ -330,6 +330,7 @@ class Sword(BaseGameObject):
         self.angle = 0
         self.vector = pygame.Vector2(0, 0)
         super().__init__(x - 50, y - 20, units_characteristics.swordman["gun_img"], HITBOX_ARROW, team, True)
+        self.hitbox.can_slide = False
         self.orig_image = self.image
         all_sprites.change_layer(self, 0)
 
