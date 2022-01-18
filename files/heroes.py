@@ -92,12 +92,18 @@ class BaseHero(BaseGameObject):
         all_sprites.change_layer(self, self.global_y + self.rect.h)
         super().update()
 
-    def take_damage(self, damage, from_candle=False, count_of_particles=10):
+    def take_damage(self, damage, from_candle=False, count_of_particles=10, from_poison=False):
         """from_candle НЕНАДО ставить TRUE. Это только для предмета свеча"""
-        damage = damage * self.damage_multiplier - self.protection
+        if not from_poison:
+            damage = damage * self.damage_multiplier - self.protection
+        else:
+            damage = damage * self.damage_multiplier
         print(damage, from_candle)
         if damage > 0:
-            self.armor -= damage
+            if from_poison:
+                self.hp -= damage
+            else:
+                self.armor -= damage
             if self.armor < 0:
                 self.hp -= abs(self.armor)
 

@@ -45,14 +45,27 @@ swordman = {
 }
 
 # ENEMY
+snake = {
+    "name": "Ядовитая Змея",
+    "img": "abobus.png",
+    "hp": 1,
+    "armor": 0,
+    "protection": 0,
+    "speed": 2.5,
+    "attack_cooldown": 2,
+    "damage": 1,
+    "attack_distance": 50,
+}
+
 mini_golem = {
     "name": "Мини-голем",
     "img": "abobus.png",
+    "gun_img": "arrow.png",
     "hp": 6,
     "armor": 6,
     "protection": 0,
-    "speed": 1,
+    "speed": 0.8,
     "attack_cooldown": 2,
     "damage": 2,
-    "attack_distance": 100,
+    "attack_distance": 300,
 }
