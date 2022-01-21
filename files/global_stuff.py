@@ -30,7 +30,7 @@ class LayeredUpdates(pygame.sprite.LayeredUpdates):
 
 class Hitbox(pygame.sprite.Sprite):
     def __init__(self, dx, dy, width, height, parent, can_slide):
-        super().__init__(hitbox_group)  # add second argument "all_sprites" to show image of hitbox
+        super().__init__(hitbox_group, all_sprites)  # add second argument "all_sprites" to show image of hitbox
         self.rect = pygame.Rect(0, 0, width, height)
         self.image = pygame.Surface((width, height))
         self.image.fill(pygame.Color("red"))
@@ -78,13 +78,14 @@ class Camera:
 class BaseGameObject(pygame.sprite.Sprite):
     def __init__(self, x, y, img, hitbox=None, team=None, can_slide=True):  # hitbox = [dx, dy, width, height]
 
-        self.image = pygame.image.load(f"files/img/{img}")
+        self.initial_image = self.image = pygame.image.load(f"files/img/{img}")
         self.rect = self.image.get_rect()
         self.global_x, self.global_y = x, y
         self.team = team
         self.__animations = {}  # structure {"name-of-animation": ['loaded_image'... ]}
         self.__current_animation = None
         self.__animation_counter = 0
+        self.__current_animation_once = False
 
         if hitbox:
             if hitbox == HITBOX_ARROW:
@@ -119,10 +120,11 @@ class BaseGameObject(pygame.sprite.Sprite):
             except FileNotFoundError:
                 break
 
-    def play_animation(self, name: str):
+    def play_animation(self, name: str, once=False):
         """ Plays an animation with the name 'name'
             This can be called even if the current animation is an animation with the name 'name'
         """
+        self.__current_animation_once = once
         if self.__current_animation != name:
             self.__animation_counter = 0
             self.__current_animation = name
@@ -141,6 +143,8 @@ class BaseGameObject(pygame.sprite.Sprite):
         self.__animation_counter += 1
         if self.__animation_counter >= len(self.__animations[self.__current_animation]):
             self.__animation_counter = 0
+            if self.__current_animation_once:
+                self.stop_animation()
 
     def get_current_animation(self):
         return self.__current_animation

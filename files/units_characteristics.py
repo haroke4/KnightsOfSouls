@@ -59,8 +59,8 @@ snake = {
 
 mini_golem = {
     "name": "Мини-голем",
-    "img": "abobus.png",
-    "gun_img": "arrow.png",
+    "img": "Mini-golem/walk-left/1.png",
+    "gun_img": "RockBall.png",
     "hp": 6,
     "armor": 6,
     "protection": 0,

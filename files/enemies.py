@@ -1,6 +1,9 @@
 import random
 import math
 from threading import Timer
+
+import pygame
+
 from files.particles import SquareParticle
 from files.global_stuff import *
 from files.heroes import BaseHero
@@ -9,8 +12,7 @@ from files import units_characteristics
 
 class BaseEnemy(BaseGameObject):
     def __init__(self, x, y, image, hp, armor, protection, speed, attack_cooldown, damage,
-                 attack_range, player: BaseHero, anim_folder=None):
-        # anim_folder для анимаций. Пока что не  трогай. Пусть остается
+                 attack_range, player: BaseHero, hitbox=None):
         self.max_hp = self.hp = hp
         self.max_armor = self.armor = armor
         self.protection = protection
@@ -21,10 +23,14 @@ class BaseEnemy(BaseGameObject):
         self.vector = pygame.Vector2(0, 0)
         self.player = player
         self.slowing_down_effect_timer = None
+        self.player_side = "left"
+        self.blood_color = pygame.Color("red")
 
         self.distance = 0  # текущяя дистанция между игроком и мобом
         self.attack_range = attack_range
-        super().__init__(x, y, image, [6, 35, 36, 15], ENEMY_TEAM)
+        if not hitbox:
+            hitbox = [6, 35, 36, 15]
+        super().__init__(x, y, image, hitbox, ENEMY_TEAM)
 
     def take_damage(self, damage, from_candle=False, count_of_particles=10):
         damage = damage - self.protection
@@ -43,11 +49,13 @@ class BaseEnemy(BaseGameObject):
                                                 pygame.Color("orange"), count_of_particles)
             else:
                 SquareParticle.create_particles(self.global_x + self.rect.w // 2, self.global_y + self.rect.h // 2,
-                                                pygame.Color("red"), count_of_particles)
+                                                self.blood_color, count_of_particles)
 
     def look_at_player(self):
         """Меняет вектор self.vector и измеряет растояние """
-        self.vector = pygame.Vector2(self.player.global_x - self.global_x, self.player.global_y - self.global_y)
+        self.vector = pygame.Vector2(self.player.hitbox.rect.x - self.hitbox.rect.x,
+                                     self.player.hitbox.rect.y - self.hitbox.rect.y)
+        self.player_side = "left" if self.vector.x < 0 else "right"
         self.distance = self.vector.length()
         self.vector.normalize_ip()
 
@@ -145,21 +153,30 @@ class MiniGolem(BaseEnemy):
     def __init__(self, x, y, pl):
         data = units_characteristics.mini_golem
         super().__init__(x, y, data["img"], data["hp"], data["armor"], data["protection"], data["speed"],
-                         data["attack_cooldown"], data["damage"], data["attack_distance"], pl)
+                         data["attack_cooldown"], data["damage"], data["attack_distance"], pl, hitbox=[30, 80, 40, 20])
         self.gun = Rock(x, y, self.team, data["damage"], self)
         self.new_rock_timer = None
+        self.blood_color = pygame.Color(44, 48, 47)
         self.rock_dx, self.rock_dy = 30, 5
 
+        self.add_animation('walk-left', 'Mini-golem/walk-left')
+        self.add_animation('walk-right', 'Mini-golem/walk-right')
+        self.add_animation('attack-left', 'Mini-golem/attack-left')
+        self.add_animation('attack-right', 'Mini-golem/attack-right')
+
     def attack(self):
+        pass
         if self.gun:
             self.gun.shot()
             self.gun = None
-            self.new_rock_timer = Timer(self.attack_cooldown, self.new_spear)
+            self.new_rock_timer = Timer(self.attack_cooldown, self.new_rock)
             self.new_rock_timer.start()
 
-    def new_spear(self):
-        self.gun = Rock(self.global_x, self.global_y, self.team, self.damage, self)
-        self.gun.update()
+    def new_rock(self):
+        if self.alive():
+            self.gun = Rock(self.global_x, self.global_y, self.team, self.damage, self)
+            self.can_attack = True
+            self.gun.update()
 
     def die(self):
         if self.new_rock_timer:
@@ -170,13 +187,24 @@ class MiniGolem(BaseEnemy):
 
     def update(self):
         self.look_at_player()
+        anim = None
         if self.distance <= self.attack_range:
             if self.distance <= 200:
+                anim = 'walk'
                 self.move_away_from_player()
             if self.can_attack:
-                self.attack()
+                self.can_attack = False
+                anim = 'attack'
+                Timer(0.7, self.attack).start()
         else:
+            anim = 'walk'
             self.move_to_player()
+
+        if anim == 'attack':
+            self.play_animation(f'attack-{self.player_side}', once=True)
+        elif anim == 'walk':
+            self.play_animation(f'walk-{self.player_side}')
+
         all_sprites.change_layer(self, self.global_y + self.rect.h)
         super().update()
 
@@ -189,7 +217,8 @@ class Rock(BaseGameObject):
         self.speed = 10
         self.shooted = False
         self.vector = pygame.Vector2(0, 0)
-
+        self.dx = 25
+        self.dy = -15
         super().__init__(x, y, units_characteristics.mini_golem['gun_img'], HITBOX_ARROW, team, False)
         self.orig_image = self.image
 
@@ -200,8 +229,9 @@ class Rock(BaseGameObject):
 
     def look_at_player(self):
         x, y = self.parent.player.global_x, self.parent.player.global_y
-        self.angle = pygame.Vector2(x - self.parent.global_x - self.rect.w // 2, y - self.parent.global_y
-                                    - self.rect.h // 2).normalize().angle_to(pygame.Vector2(1, 0))
+        self.angle = pygame.Vector2(x - self.parent.hitbox.rect.x - self.dx,
+                                    y - self.parent.hitbox.rect.y - self.dy) \
+                                    .normalize().angle_to(pygame.Vector2(1, 0))
         if self.angle < 0:
             self.angle += 360
         self.image = pygame.transform.rotate(self.orig_image, self.angle)
@@ -221,8 +251,8 @@ class Rock(BaseGameObject):
                     self.die()
         else:
             self.look_at_player()
-            self.set_pos(self.parent.global_x + 40 * math.cos(self.angle / 180 * math.pi) + 3,
-                         self.parent.global_y - 40 * math.sin(self.angle / 180 * math.pi) + 15)
+            self.set_pos(self.parent.hitbox.rect.x + 50 * math.cos(self.angle / 180 * math.pi) + self.dx,
+                         self.parent.hitbox.rect.y - 40 * math.sin(self.angle / 180 * math.pi) + self.dy)
 
         self.hitbox.set_pos(self.global_x, self.global_y)
         super().update()

@@ -126,6 +126,9 @@ class BaseHero(BaseGameObject):
             if from_candle:
                 SquareParticle.create_particles(self.global_x + self.rect.w // 2, self.global_y + self.rect.h // 2,
                                                 pygame.Color("orange"), count_of_particles)
+            elif from_poison:
+                SquareParticle.create_particles(self.global_x + self.rect.w // 2, self.global_y + self.rect.h // 2,
+                                                pygame.Color((73, 187, 34)), count_of_particles)
             else:
                 SquareParticle.create_particles(self.global_x + self.rect.w // 2, self.global_y + self.rect.h // 2,
                                                 pygame.Color("red"), count_of_particles)

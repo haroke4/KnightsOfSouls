@@ -15,9 +15,11 @@ font = pygame.font.Font(None, 25)
 PLAY_ANIMATION = pygame.USEREVENT + 1
 pygame.time.set_timer(PLAY_ANIMATION, 100)
 
-player = SwordMan(250, 250)
-enemy = MiniGolem(100, 300, player)
-snake = Snake(600, 300, player)
+player = SpearMan(250, 250)
+MiniGolem(500, 400, player)
+Snake(300, 400, player)
+# for i in range(10):
+#    MiniGolem(random.randrange(100, 700, 50) , random.randrange(50, 400, 50), player)
 
 # box
 for i in range(20):
@@ -78,10 +80,9 @@ while playing:
                           draw_area['b'] - draw_area['t']])
 
     screen.blit(font.render(f" HP: {player.hp}", True, pygame.Color("white")), (50, 20))
-    screen.blit(font.render(f" ENEMY HP: {enemy.hp}", True, pygame.Color("white")), (50, 40))
+    # screen.blit(font.render(f" ENEMY HP: {enemy.hp}", True, pygame.Color("white")), (50, 40))
     screen.blit(font.render(f"FPS: {clock.get_fps()}", True, pygame.Color("white")), (50, 60))
     screen.blit(font.render(f" ARMOR: {player.armor}", True, pygame.Color("white")), (50, 80))
     pygame.display.flip()
 
     clock.tick(FPS)
-
