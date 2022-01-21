@@ -81,7 +81,7 @@ class Camera:
 class BaseGameObject(pygame.sprite.Sprite):
     def __init__(self, x, y, img, hitbox=None, team=None, can_slide=True):  # hitbox = [dx, dy, width, height]
 
-        self.initial_image = self.image = pygame.image.load(f"files/img/{img}")
+        self.initial_image = self.image = pygame.image.load(f"files/img/{img}").convert_alpha()
         self.rect = self.image.get_rect()
         self.global_x, self.global_y = x, y
         self.team = team
@@ -117,7 +117,7 @@ class BaseGameObject(pygame.sprite.Sprite):
         counter = 1
         while True:
             try:
-                frame = pygame.image.load(f'files/img/{path}/{counter}.png')
+                frame = pygame.image.load(f'files/img/{path}/{counter}.png').convert_alpha()
                 self.__animations[name].append(frame)
                 counter += 1
             except FileNotFoundError:
@@ -160,19 +160,6 @@ class BaseGameObject(pygame.sprite.Sprite):
 
     def die(self):
         delete_later.append(self)
-
-
-class GameManager:
-    def __init__(self, player=None):
-        self.player = player
-        self.player_position = [0, 0]
-
-    def get_player_position(self):
-        self.player_position = [self.player.global_x, self.player.global_y]
-        return [self.player.global_x, self.player.global_y]
-
-    def update(self):
-        self.get_player_position()
 
 
 ctypes.windll.user32.SetProcessDPIAware()

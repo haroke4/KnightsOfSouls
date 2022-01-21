@@ -1,6 +1,3 @@
-import pygame
-
-from files.global_stuff import *
 from files.heroes import *
 from files.enemies import *
 from files.items import *
@@ -9,13 +6,16 @@ from files.environment_classes import MovingWall, Wall
 print(WIDTH, HEIGHT)
 pygame.init()
 pygame.mixer.init()
-screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
+
+screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN | pygame.DOUBLEBUF, 16)
 clock = pygame.time.Clock()
 font = pygame.font.Font(None, 25)
 PLAY_ANIMATION = pygame.USEREVENT + 1
+UPDATE_ALL_STUFF = pygame.USEREVENT + 2
+pygame.time.set_timer(UPDATE_ALL_STUFF, 20)
 pygame.time.set_timer(PLAY_ANIMATION, 100)
 
-player = SpearMan(250, 250)
+player = MagicMan(250, 250)
 MiniGolem(500, 400, player)
 Snake(300, 400, player)
 # for i in range(10):
@@ -33,6 +33,8 @@ for i in range(23):
 for i in range(23):
     Wall(950, 50 + 20 * i)
 playing = True
+
+pygame.event.set_allowed([pygame.QUIT, pygame.KEYDOWN, pygame.KEYUP, PLAY_ANIMATION])
 while playing:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:

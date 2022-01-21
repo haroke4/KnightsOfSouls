@@ -223,18 +223,18 @@ class Rock(BaseGameObject):
         self.orig_image = self.image
 
     def shot(self):
-        self.vector = pygame.Vector2(1, 0).rotate(-self.angle).normalize()
+        x, y = self.parent.player.global_x, self.parent.player.global_y
+        self.vector = pygame.Vector2(x - self.parent.hitbox.rect.x - self.dx,
+                                     y - self.parent.hitbox.rect.y - self.dy).normalize()
         self.hitbox.mask = pygame.mask.from_surface(self.image)
         self.shooted = True
 
-    def look_at_player(self):
+    def update_angle(self):
         x, y = self.parent.player.global_x, self.parent.player.global_y
-        self.angle = pygame.Vector2(x - self.parent.hitbox.rect.x - self.dx,
-                                    y - self.parent.hitbox.rect.y - self.dy) \
+        self.angle = pygame.Vector2(x - self.parent.hitbox.rect.x - self.dx, y - self.parent.hitbox.rect.y - self.dy) \
                                     .normalize().angle_to(pygame.Vector2(1, 0))
         if self.angle < 0:
             self.angle += 360
-        self.image = pygame.transform.rotate(self.orig_image, self.angle)
 
     def update(self):
         all_sprites.change_layer(self, self.hitbox.rect.bottom)
@@ -250,7 +250,7 @@ class Rock(BaseGameObject):
                                                         pygame.transform.average_color(i.parent.image))
                     self.die()
         else:
-            self.look_at_player()
+            self.update_angle()
             self.set_pos(self.parent.hitbox.rect.x + 50 * math.cos(self.angle / 180 * math.pi) + self.dx,
                          self.parent.hitbox.rect.y - 40 * math.sin(self.angle / 180 * math.pi) + self.dy)
 

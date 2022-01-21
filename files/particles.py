@@ -6,7 +6,7 @@ from random import randrange
 class BaseParticle(pygame.sprite.Sprite):
     def __init__(self, x, y, img, vector):
         self.vector = vector
-        self.image = pygame.image.load(f"files/img/{img}")
+        self.image = pygame.image.load(f"files/img/{img}").convert_alpha()
         self.rect = self.image.get_rect()
         self.global_x, self.global_y = x, y
         super().__init__(particle_group)
