@@ -25,7 +25,10 @@ class LayeredUpdates(pygame.sprite.LayeredUpdates):
         for sprite in self.sprites():
             if not (sprite.rect.right < draw_area["l"] or sprite.rect.left > draw_area["r"] or
                     sprite.rect.bottom < draw_area["t"] or sprite.rect.top > draw_area["b"]):
-                surface.blit(sprite.image, sprite.rect)
+                try:
+                    surface.blit(sprite.image, sprite.rect)
+                except pygame.error:
+                    pass
 
 
 class Hitbox(pygame.sprite.Sprite):
