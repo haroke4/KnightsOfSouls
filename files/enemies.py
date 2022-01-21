@@ -153,7 +153,7 @@ class MiniGolem(BaseEnemy):
     def __init__(self, x, y, pl):
         data = units_characteristics.mini_golem
         super().__init__(x, y, data["img"], data["hp"], data["armor"], data["protection"], data["speed"],
-                         data["attack_cooldown"], data["damage"], data["attack_distance"], pl, hitbox=[30, 80, 40, 20])
+                         data["attack_cooldown"], data["damage"], data["attack_distance"], pl, hitbox=[30, 60, 40, 40])
         self.gun = Rock(x, y, self.team, data["damage"], self)
         self.new_rock_timer = None
         self.blood_color = pygame.Color(44, 48, 47)
