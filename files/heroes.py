@@ -71,7 +71,7 @@ class BaseHero(BaseGameObject):
         pass
 
     def update(self):
-        self.key_input()
+
         if self.running:
             move_x, move_y = self.velocity.x * self.run_speed, self.velocity.y * self.run_speed
         else:
@@ -177,7 +177,18 @@ class SpearMan(BaseHero):
 
     def new_spear(self):
         self.gun = Spear(self.global_x, self.global_y, self.team, self.damage, self)
-        self.gun.update()
+        self.look_at_mouse()
+
+    def look_at_mouse(self):
+        if not self.gun.shooted:
+            x, y = from_local_to_global_pos(*pygame.mouse.get_pos())
+            self.gun.angle = pygame.Vector2(x - self.global_x - self.gun.rect.w // 2, y - self.global_y
+                                            - self.gun.rect.h // 2).normalize().angle_to(pygame.Vector2(1, 0))
+            if self.gun.angle < 0:
+                self.gun.angle += 360
+            self.gun.image = pygame.transform.rotate(self.gun.orig_image, self.gun.angle)
+            self.gun.set_pos(self.global_x + 40 * math.cos(self.gun.angle / 180 * math.pi) + 3,
+                             self.global_y - 40 * math.sin(self.gun.angle / 180 * math.pi) + 15)
 
     def die(self):
         if self.new_spear_timer:
@@ -235,12 +246,8 @@ class Spear(BaseGameObject):
                             Timer(5, i.parent.take_damage, [1, True]).start()
                     else:
                         SquareParticle.create_particles(self.global_x, self.global_y,
-                                                        pygame.transform.average_color(i.parent.image))
+                                                        i.parent.avg_color)
                     self.die()
-        else:
-            self.look_at_mouse()
-            self.set_pos(self.parent.global_x + 40 * math.cos(self.angle / 180 * math.pi) + 3,
-                         self.parent.global_y - 40 * math.sin(self.angle / 180 * math.pi) + 15)
 
         self.hitbox.set_pos(self.global_x, self.global_y)
         super().update()
@@ -315,6 +322,17 @@ class SwordMan(BaseHero):
             self.gun.attack()
             self.can_attack = False
             self.can_attack_timer = Timer(self.attack_cooldown, self.enable_attack).start()
+
+    def look_at_mouse(self):
+        if not self.gun.attacking:
+            x, y = from_local_to_global_pos(*pygame.mouse.get_pos())
+            self.gun.angle = pygame.Vector2(x - self.global_x - self.gun.rect.w // 2, y - self.global_y
+                                            - self.gun.rect.h // 2).normalize().angle_to(pygame.Vector2(1, 0))
+            if self.gun.angle < 0:
+                self.gun.angle += 360
+            self.gun.image = pygame.transform.rotate(self.gun.orig_image, self.gun.angle)
+            self.gun.set_pos(self.global_x + 40 * math.cos(self.gun.angle / 180 * math.pi) + 3,
+                             self.global_y - 40 * math.sin(self.gun.angle / 180 * math.pi) + 15)
 
     def die(self):
         if self.can_attack_timer:

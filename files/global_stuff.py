@@ -33,7 +33,7 @@ class LayeredUpdates(pygame.sprite.LayeredUpdates):
 
 class Hitbox(pygame.sprite.Sprite):
     def __init__(self, dx, dy, width, height, parent, can_slide):
-        super().__init__(hitbox_group, all_sprites)  # add second argument "all_sprites" to show image of hitbox
+        super().__init__(hitbox_group)  # add second argument "all_sprites" to show image of hitbox
         self.rect = pygame.Rect(0, 0, width, height)
         self.image = pygame.Surface((width, height))
         self.image.fill(pygame.Color("red"))
@@ -58,30 +58,20 @@ class Hitbox(pygame.sprite.Sprite):
 
 class Camera:
     def __init__(self):
-        self.dx = 0
-        self.dy = 0
-        self.min_speed = 0.7
+        self.min_speed = 1
         self.all_x_offset = self.all_y_offset = 0
 
     def update(self, target):
         if target.alive():
-            self.dx = -(target.rect.x + target.rect.w // 2 - WIDTH // 2)
-            self.dy = -(target.rect.y + target.rect.h // 2 - HEIGHT // 2)
-            if self.dx < -1 or self.dx > 1:
-                self.dx = self.dx * 0.01 if not -self.min_speed < self.dx * 0.01 < self.min_speed else \
-                    self.min_speed * self.dx / abs(self.dx)
-            if self.dy < -1 or self.dy > 1:
-                self.dy = self.dy * 0.01 if not -self.min_speed < self.dy * 0.01 < self.min_speed else \
-                    self.min_speed * self.dy / abs(self.dy)
-
-            self.all_x_offset += self.dx
-            self.all_y_offset += self.dy
+            self.all_x_offset -= target.rect.x + target.rect.w / 2 - WIDTH / 2
+            self.all_y_offset -= target.rect.y + target.rect.h / 2 - HEIGHT / 2
 
 
 class BaseGameObject(pygame.sprite.Sprite):
     def __init__(self, x, y, img, hitbox=None, team=None, can_slide=True):  # hitbox = [dx, dy, width, height]
 
         self.initial_image = self.image = pygame.image.load(f"files/img/{img}").convert_alpha()
+        self.avg_color = pygame.transform.average_color(self.image)
         self.rect = self.image.get_rect()
         self.global_x, self.global_y = x, y
         self.team = team
@@ -156,7 +146,7 @@ class BaseGameObject(pygame.sprite.Sprite):
         self.global_x, self.global_y = glob_x, glob_y
 
     def update(self):
-        self.rect.x, self.rect.y = [int(i) for i in from_global_to_local_pos(self.global_x, self.global_y)]
+        self.rect.x, self.rect.y = [i for i in from_global_to_local_pos(self.global_x, self.global_y)]
 
     def die(self):
         delete_later.append(self)
@@ -172,6 +162,7 @@ ENEMY_TEAM = "enemy"
 FPS = 100
 WIDTH = true_res[0]
 HEIGHT = true_res[1]
+TILE_SIZE = TILE_WIDTH, TILE_HEIGHT = (64, 64)
 
 all_sprites = LayeredUpdates()
 particle_group = LayeredUpdates()
@@ -179,5 +170,7 @@ hitbox_group = pygame.sprite.Group()
 delete_later = []
 play_animation_group = []
 draw_area = {"l": 0, "t": 0, "r": WIDTH, "b": HEIGHT}  # left top right bottom
+take_damage = []  # for multiplayer
+current_level = 1
 
 CAMERA = Camera()

@@ -4,7 +4,7 @@ from files.heroes import BaseHero
 
 class BaseItem(BaseGameObject):
     def __init__(self, x, y, img):  # drop - предмет выпадает или нет
-        super(BaseItem, self).__init__(x, y, img, HITBOX_FULL_RECT, team=None, can_slide=False)
+        super(BaseItem, self).__init__(x, y, "items/"+img, HITBOX_FULL_RECT, team=None, can_slide=False)
         self.hitbox.mask = pygame.mask.from_surface(self.image)
 
     def give_effect(self, obj):  # чтобы ошибка не возникала

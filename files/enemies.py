@@ -247,7 +247,7 @@ class Rock(BaseGameObject):
                         i.parent.take_damage(self.damage)
                     else:
                         SquareParticle.create_particles(self.global_x, self.global_y,
-                                                        pygame.transform.average_color(i.parent.image))
+                                                        i.parent.avg_color)
                     self.die()
         else:
             self.update_angle()
