@@ -1,18 +1,14 @@
-import random
 import math
-from threading import Timer
-
 import pygame
-
+from threading import Timer
 from files.particles import SquareParticle
-from files.global_stuff import *
-from files.heroes import BaseHero
+from files.global_stuff import BaseGameObject, all_sprites, ENEMY_TEAM, HITBOX_FULL_RECT
 from files import units_characteristics
 
 
 class BaseEnemy(BaseGameObject):
     def __init__(self, x, y, image, hp, armor, protection, speed, attack_cooldown, damage,
-                 attack_range, player: BaseHero, hitbox=None):
+                 attack_range, player, hitbox=None):
         self.max_hp = self.hp = hp
         self.max_armor = self.armor = armor
         self.protection = protection
@@ -165,7 +161,6 @@ class MiniGolem(BaseEnemy):
         self.add_animation('attack-right', 'Mini-golem/attack-right')
 
     def attack(self):
-        pass
         if self.gun:
             self.gun.shot()
             self.gun = None
@@ -219,20 +214,21 @@ class Rock(BaseGameObject):
         self.vector = pygame.Vector2(0, 0)
         self.dx = 25
         self.dy = -15
-        super().__init__(x, y, units_characteristics.mini_golem['gun_img'], HITBOX_ARROW, team, False)
+        super().__init__(x, y, units_characteristics.mini_golem['gun_img'], HITBOX_FULL_RECT, team, False)
         self.orig_image = self.image
 
     def shot(self):
-        x, y = self.parent.player.global_x, self.parent.player.global_y
-        self.vector = pygame.Vector2(x - self.parent.hitbox.rect.x - self.dx,
-                                     y - self.parent.hitbox.rect.y - self.dy).normalize()
+        x = self.parent.player.hitbox.rect.x
+        y = self.parent.player.hitbox.rect.y
+        self.vector = pygame.Vector2(x - self.hitbox.rect.x,
+                                     y - self.hitbox.rect.y).normalize()
         self.hitbox.mask = pygame.mask.from_surface(self.image)
         self.shooted = True
 
     def update_angle(self):
         x, y = self.parent.player.global_x, self.parent.player.global_y
         self.angle = pygame.Vector2(x - self.parent.hitbox.rect.x - self.dx, y - self.parent.hitbox.rect.y - self.dy) \
-                                    .normalize().angle_to(pygame.Vector2(1, 0))
+            .normalize().angle_to(pygame.Vector2(1, 0))
         if self.angle < 0:
             self.angle += 360
 

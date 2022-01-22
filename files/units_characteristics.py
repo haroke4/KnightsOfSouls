@@ -1,6 +1,16 @@
 """
 Вся инфа про боссов, персов
 """
+
+
+def increase_mob_characteristics(x: object) -> object:
+    for i in [mini_golem, snake]:
+        i["hp"] = x * i["hp"]
+        i["armor"] = x * i["armor"]
+        i["damage"] = x * i["damage"]
+        i["protection"] = x * i["protection"]
+
+
 # HEROES
 spearman = {
     "name": "Копейщик",

@@ -1,10 +1,21 @@
 from files.global_stuff import *
 from files.heroes import BaseHero
+from threading import Timer
+from random import randint, choice
+
+
+def get_random_item():
+    # 77% - обычный предмет
+    # 23% - редкий предмет
+    if randint(0, 11) <= 7:
+        return choice(ordinary_items)
+    else:
+        return choice(rare_items)
 
 
 class BaseItem(BaseGameObject):
     def __init__(self, x, y, img):  # drop - предмет выпадает или нет
-        super(BaseItem, self).__init__(x, y, "items/"+img, HITBOX_FULL_RECT, team=None, can_slide=False)
+        super(BaseItem, self).__init__(x, y, "items/" + img, HITBOX_FULL_RECT, team=None, can_slide=False)
         self.hitbox.mask = pygame.mask.from_surface(self.image)
 
     def give_effect(self, obj):  # чтобы ошибка не возникала
@@ -13,8 +24,7 @@ class BaseItem(BaseGameObject):
     def update(self):
         for colliding_item in self.hitbox.get_colliding_objects():
             if isinstance(colliding_item.parent, BaseHero):
-                if pygame.sprite.collide_mask(self.hitbox, colliding_item):
-                    self.give_effect(colliding_item.parent)
+                self.give_effect(colliding_item.parent)
         super().update()
 
 
@@ -34,6 +44,7 @@ class SteelPlaster(BaseItem):
 
     def give_effect(self, obj):
         obj.max_armor += 5
+        obj.armor += 5
         self.die()
 
 
@@ -51,7 +62,8 @@ class EnergyDrink(BaseItem):
         super().__init__(x, y, "EnergyDrink.png")
 
     def give_effect(self, obj):
-        obj.run_speed += 0.5
+        obj.run_speed += 1
+        obj.initial_run_speed += 1
         self.die()
 
 
@@ -70,7 +82,8 @@ class AppleBag(BaseItem):
         self.parent = None
 
     def give_effect(self, obj):
-        pass
+        obj.apple_bag_count += 0.5
+        self.die()
 
 
 class ElectricRing(BaseItem):
@@ -85,8 +98,6 @@ class ElectricRing(BaseItem):
         self.image = pygame.image.load("files/img/GarlicCircle.png")
         self.rect = self.image.get_rect()
         self.hitbox.rect = self.image.get_rect()
-        self.hitbox.image = pygame.Surface((self.hitbox.rect.w, self.hitbox.rect.h))
-        self.hitbox.image.fill(pygame.Color("red"))
         self.hitbox.mask = pygame.mask.from_surface(self.image)
         self.dx = (self.rect.w - obj.rect.w) / 2
         self.dy = (self.rect.h - obj.rect.h) / 2 - 10
@@ -128,7 +139,7 @@ class Candle(BaseItem):
         super().__init__(x, y, "Candle.png")
 
     def give_effect(self, obj):
-        obj.has_candle = True
+        obj.candle_damage += 1
         self.die()
 
 
@@ -149,7 +160,7 @@ class CursedBlood(BaseItem):
     def give_effect(self, obj):
         obj.vampirism += 0.1
         obj.max_hp -= 3
-        obj.hp -= 3
+        obj.take_damage(3, from_vampirism=True)
         self.die()
 
 
@@ -203,3 +214,8 @@ class TwinMirror(BaseItem):
                 self.owner.change_damage_multiplier(2)
                 self.status_changed = True
                 Timer(10, self.change_status, [1]).start()
+
+
+ordinary_items = [Plaster, SteelPlaster, Steroids, EnergyDrink, PocketWatch, AppleBag]
+rare_items = [LHead, Candle, WeightingStone, CursedBlood]
+epic_items = [Cross, WeldingHelmet, TwinMirror]

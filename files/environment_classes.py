@@ -15,9 +15,6 @@ class Wall(BaseGameObject):
 class Floor(BaseGameObject):
     def __init__(self, x, y, img):
         super().__init__(x, y, img, None, can_slide=False)
-        self.image = pygame.Surface((1472, 1024))
-        self.image.fill((115, 125, 156))
-        self.rect = self.image.get_rect()
         all_sprites.change_layer(self, -9999)
 
 

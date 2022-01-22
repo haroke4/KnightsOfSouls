@@ -22,12 +22,13 @@ class BaseHero(BaseGameObject):
         self.velocity = pygame.Vector2(0, 0)
         super().__init__(x, y, image, [6, 35, 36, 15], PLAYER_TEAM)
         self.damage_multiplier = 1
-        self.has_candle = False  # для предмета "свеча"
+        self.candle_damage = 0  # для предмета "свеча"
         self.has_cross = False  # for item Cross
+        self.apple_bag_count = 0
         self.vampirism = 0  # FLOAT
         self.has_welding_helmet = False
         self.slowing_down_effect_timer = None
-        self.timers = []
+        self.armor_heal_timer = None
 
         # настройка анимаций
         self.add_animation('up', anim_folder + '/up')
@@ -92,36 +93,37 @@ class BaseHero(BaseGameObject):
         all_sprites.change_layer(self, self.global_y + self.rect.h)
         super().update()
 
-    def take_damage(self, damage, from_candle=False, count_of_particles=10, from_poison=False):
+    def take_damage(self, damage, from_candle=False, count_of_particles=10, from_poison=False, from_vampirism=False):
         """from_candle НЕНАДО ставить TRUE. Это только для предмета свеча"""
-        if not from_poison:
+        if self.armor_heal_timer:
+            self.armor_heal_timer.cancel()
+        if not from_poison and not from_vampirism:
             damage = damage * self.damage_multiplier - self.protection
         else:
             damage = damage * self.damage_multiplier
-        print(damage, from_candle)
+        print(self.__class__.__name__, damage)
         if damage > 0:
-            if from_poison:
+            if from_poison or from_vampirism:
                 self.hp -= damage
             else:
                 self.armor -= damage
             if self.armor < 0:
                 self.hp -= abs(self.armor)
-
-                if self.hp <= 0:
-                    if self.has_cross:  # если есть крест не убиваем
-                        self.hp = self.max_hp
-                        self.armor = self.max_armor
-                        self.damage_multiplier = 0  # дается бессмертие на 3 секунды
-                        self.has_cross = False
-                        Timer(3, self.change_damage_multiplier, [1]).start()  # убираем бессмертие
-                    else:
-                        self.die()
                 self.armor = 0
 
-        if self.has_candle and not from_candle:
+            if self.hp <= 0:
+                if self.has_cross:  # если есть крест не убиваем
+                    self.hp = self.max_hp
+                    self.armor = self.max_armor
+                    self.damage_multiplier = 0  # дается бессмертие на 3 секунды
+                    self.has_cross = False
+                    Timer(3, self.change_damage_multiplier, [1]).start()  # убираем бессмертие
+                else:
+                    self.die()
+        if self.candle_damage and not from_candle:
             # индикатор огня
-            Timer(1, self.take_damage, [1, True]).start()
-            Timer(2, self.take_damage, [1, True]).start()
+            Timer(1, self.take_damage, [self.candle_damage, True]).start()
+            Timer(2, self.take_damage, [self.candle_damage, True]).start()
         if self.alive():
             if from_candle:
                 SquareParticle.create_particles(self.global_x + self.rect.w // 2, self.global_y + self.rect.h // 2,
@@ -132,6 +134,8 @@ class BaseHero(BaseGameObject):
             else:
                 SquareParticle.create_particles(self.global_x + self.rect.w // 2, self.global_y + self.rect.h // 2,
                                                 pygame.Color("red"), count_of_particles)
+            self.armor_heal_timer = Timer(4, self.heal_armor)
+            self.armor_heal_timer.start()
 
     def heal(self, value):
         self.hp += value
@@ -158,6 +162,14 @@ class BaseHero(BaseGameObject):
         self.run_speed = self.initial_run_speed
         self.walk_speed = self.initial_walk_speed
 
+    def heal_armor(self):
+        self.armor += 1
+        if self.armor < self.max_armor:
+            self.armor_heal_timer = Timer(0.2, self.heal_armor)
+            self.armor_heal_timer.start()
+        else:
+            self.armor = self.max_armor
+
 
 class SpearMan(BaseHero):
     def __init__(self, x=0, y=0):
@@ -165,6 +177,7 @@ class SpearMan(BaseHero):
         super().__init__(x, y, data["img"], data["hp"], data["armor"], data["protection"], data["walk_speed"],
                          data["run_speed"], data["attack_cooldown"], data["damage"], 'SpearMan')
         self.gun = Spear(x, y, self.team, data["damage"], self)
+
         self.new_spear_timer = None
         self.spear_dx, self.spear_dy = 30, 5
 
@@ -238,12 +251,12 @@ class Spear(BaseGameObject):
                         else:
                             i.parent.take_damage(dmg)
 
-                        if self.parent.has_candle:
-                            Timer(1, i.parent.take_damage, [1, True]).start()
-                            Timer(2, i.parent.take_damage, [1, True]).start()
-                            Timer(3, i.parent.take_damage, [1, True]).start()
-                            Timer(4, i.parent.take_damage, [1, True]).start()
-                            Timer(5, i.parent.take_damage, [1, True]).start()
+                        if self.parent.candle_damage:
+                            Timer(1, i.parent.take_damage, [self.parent.candle_damage, True]).start()
+                            Timer(2, i.parent.take_damage, [self.parent.candle_damage, True]).start()
+                            Timer(3, i.parent.take_damage, [self.parent.candle_damage, True]).start()
+                            Timer(4, i.parent.take_damage, [self.parent.candle_damage, True]).start()
+                            Timer(5, i.parent.take_damage, [self.parent.candle_damage, True]).start()
                     else:
                         SquareParticle.create_particles(self.global_x, self.global_y,
                                                         i.parent.avg_color)
@@ -272,7 +285,7 @@ class MagicMan(BaseHero):
             fire = MagicManFire(x, y, self.damage, self.team, self)
             self.can_shot = False
             Timer(self.attack_cooldown, self.enable_shot).start()
-            Timer(self.attack_cooldown, fire.die).start()
+            Timer(1, fire.die).start()
 
     def enable_shot(self):
         self.can_shot = True
@@ -293,12 +306,12 @@ class MagicManFire(BaseGameObject):
             if hasattr(i.parent, "hp"):
                 i.parent.take_damage(self.damage)
                 i.parent.get_slowing_down_effect(time=2, value=0.5)
-                if self.parent.has_candle:
-                    Timer(1, i.parent.take_damage, [1, True]).start()
-                    Timer(2, i.parent.take_damage, [1, True]).start()
-                    Timer(3, i.parent.take_damage, [1, True]).start()
-                    Timer(4, i.parent.take_damage, [1, True]).start()
-                    Timer(5, i.parent.take_damage, [1, True]).start()
+                if self.parent.candle_damage:
+                    Timer(1, i.parent.take_damage, [self.parent.candle_damage, True]).start()
+                    Timer(2, i.parent.take_damage, [self.parent.candle_damage, True]).start()
+                    Timer(3, i.parent.take_damage, [self.parent.candle_damage, True]).start()
+                    Timer(4, i.parent.take_damage, [self.parent.candle_damage, True]).start()
+                    Timer(5, i.parent.take_damage, [self.parent.candle_damage, True]).start()
                 self.parent.heal(self.damage * self.parent.vampirism)
             self.damage_taken.append(i)
         super().update()
@@ -384,12 +397,12 @@ class Sword(BaseGameObject):
                         if hasattr(i.parent, "hp"):
                             i.parent.take_damage(self.damage)
                             self.parent.heal(self.damage * self.parent.vampirism)
-                            if self.parent.has_candle:
-                                Timer(1, i.parent.take_damage, [1, True]).start()
-                                Timer(2, i.parent.take_damage, [1, True]).start()
-                                Timer(3, i.parent.take_damage, [1, True]).start()
-                                Timer(4, i.parent.take_damage, [1, True]).start()
-                                Timer(5, i.parent.take_damage, [1, True]).start()
+                            if self.parent.candle_damage:
+                                Timer(1, i.parent.take_damage, [self.parent.candle_damage, True]).start()
+                                Timer(2, i.parent.take_damage, [self.parent.candle_damage, True]).start()
+                                Timer(3, i.parent.take_damage, [self.parent.candle_damage, True]).start()
+                                Timer(4, i.parent.take_damage, [self.parent.candle_damage, True]).start()
+                                Timer(5, i.parent.take_damage, [self.parent.candle_damage, True]).start()
                         self.damage_taken.append(i)
 
         else:

@@ -36,7 +36,6 @@ class Hitbox(pygame.sprite.Sprite):
         super().__init__(hitbox_group)  # add second argument "all_sprites" to show image of hitbox
         self.rect = pygame.Rect(0, 0, width, height)
         self.image = pygame.Surface((width, height))
-        self.image.fill(pygame.Color("red"))
         self.dx, self.dy = dx, dy
         self.parent: BaseGameObject = parent
         self.can_slide = can_slide
@@ -171,6 +170,5 @@ delete_later = []
 play_animation_group = []
 draw_area = {"l": 0, "t": 0, "r": WIDTH, "b": HEIGHT}  # left top right bottom
 take_damage = []  # for multiplayer
-current_level = 1
 
 CAMERA = Camera()
