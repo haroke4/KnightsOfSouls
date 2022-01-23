@@ -79,3 +79,53 @@ mini_golem = {
     "damage": 2,
     "attack_distance": 300,
 }
+
+dog = {
+    "name": "Пёс",
+    "img": "Mini-golem/walk-left/1.png",
+    "hp": 10,
+    "armor": 5,
+    "protection": 0,
+    "speed": 1.5,
+    "attack_cooldown": 2,
+    "damage": 1,
+    "attack_distance": 100,
+}
+
+tree = {
+    "name": "Ёлка",
+    "img": "Mini-golem/walk-left/1.png",
+    "hp": 10,
+    "armor": 5,
+    "protection": 0,
+    "speed": 3,
+    "damage": 1,
+}
+
+# BOSSES
+dragonboss = {
+    "name": "Древний Дракон",
+    "img": "Mini-golem/walk-left/1.png",
+    "hp": 30,
+    "armor": 20,
+    "protection": 0,
+    "speed": 0.8,
+    "fly_speed": 2,
+    "attack_cooldown": 2,
+    "damage": 2,
+    "attack_distance": 800,
+    "m_range": 150
+}
+
+necroboss = {
+    "name": "Некромант",
+    "img": "Mini-golem/walk-left/1.png",
+    "hp": 30,
+    "armor": 20,
+    "protection": 0,
+    "speed": 0.8,
+    "fly_speed": 2,
+    "attack_cooldown": 2,
+    "damage": 2,
+    "attack_distance": 800,
+}

@@ -54,6 +54,9 @@ class BaseHero(BaseGameObject):
             self.running = False
             self.attack(*pygame.mouse.get_pos())
 
+        if pygame.mouse.get_pressed()[1]:
+            print(self.global_x, self.global_y)
+
         if self.velocity.length() == 0:
             self.stop_animation()
             return
