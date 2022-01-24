@@ -134,9 +134,12 @@ class BaseHero(BaseGameObject):
             elif from_poison:
                 SquareParticle.create_particles(self.global_x + self.rect.w // 2, self.global_y + self.rect.h // 2,
                                                 pygame.Color((73, 187, 34)), count_of_particles)
-            else:
+            elif self.armor <= 0:
                 SquareParticle.create_particles(self.global_x + self.rect.w // 2, self.global_y + self.rect.h // 2,
                                                 pygame.Color("red"), count_of_particles)
+            else:
+                SquareParticle.create_particles(self.global_x + self.rect.w // 2, self.global_y + self.rect.h // 2,
+                                                pygame.Color("Light grey"), count_of_particles)
             self.armor_heal_timer = Timer(4, self.heal_armor)
             self.armor_heal_timer.start()
 

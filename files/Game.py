@@ -159,22 +159,37 @@ class Game:
             self.last_level = True
 
     def start_wave(self):
+
         print("START WAVE")
         self.level_just_finished = False
         self.left_walls[0][0].die()
         self.left_walls[0][1].die()
         del self.left_walls[0]
-        self.other_environment.append(Wall(1472 * (self.current_level - 1) + self.dx, 0, "Environment/LeftWall0.png"))
+        self.left_walls.append(Wall(1472 * (self.current_level - 1) + self.dx, 0, "Environment/LeftWall0.png"))
 
         for i in range(1):
             self.current_level_mobs.append(
-                MiniGolem(random.randrange(1472 * (self.current_level - 1) + TILE_WIDTH + self.dx,
-                                           1472 * (self.current_level - 1) + 1000 + self.dx),
-                          random.randrange(TILE_HEIGHT, 1024 - TILE_HEIGHT * 3),
-                          self.player))
+                DragonBoss(random.randrange(1472 * (self.current_level - 1) + TILE_WIDTH + self.dx,
+                                            1472 * (self.current_level - 1) + 1000 + self.dx),
+                           random.randrange(TILE_HEIGHT, 1024 - TILE_HEIGHT * 3),
+                           self.player)
+            )
 
     def start_boss_fighting(self):
-        self.current_level += 1
+        print("START BOSS FIGHT")
+        self.level_just_finished = False
+        self.left_walls[0][0].die()
+        self.left_walls[0][1].die()
+        del self.left_walls[0]
+
+        self.left_walls.append(Wall(1472 * (self.current_level - 1) + self.dx, 0, "Environment/LeftWall0.png"))
+
+        self.current_level_mobs.append(
+            DragonBoss(random.randrange(1472 * (self.current_level - 1) + TILE_WIDTH + self.dx,
+                                        1472 * (self.current_level - 1) + 1000 + self.dx),
+                       random.randrange(TILE_HEIGHT, 1024 - TILE_HEIGHT * 3),
+                       self.player)
+        )
         """there is no cause there is no BOSSES !"""
 
     def run(self):

@@ -4,7 +4,7 @@ import random
 import pygame
 from threading import Timer
 from files.particles import SquareParticle
-from files.global_stuff import BaseGameObject, all_sprites, ENEMY_TEAM, HITBOX_FULL_RECT
+from files.global_stuff import BaseGameObject, all_sprites, ENEMY_TEAM, HITBOX_FULL_RECT, WIDTH, HEIGHT
 from files import units_characteristics
 
 
@@ -52,14 +52,16 @@ class BaseEnemy(BaseGameObject):
 
     def look_at_player(self):
         """Меняет вектор self.vector и измеряет растояние """
-        self.vector = pygame.Vector2(self.player.hitbox.rect.x - self.hitbox.rect.x,
-                                     self.player.hitbox.rect.y - self.hitbox.rect.y)
+        self.vector = pygame.Vector2(self.player.hitbox.rect.x + self.player.hitbox.rect.w // 2 - \
+                                     self.hitbox.rect.x - self.hitbox.rect.w // 2,
+                                     self.player.hitbox.rect.y + self.player.hitbox.rect.h // 2 - \
+                                     self.hitbox.rect.y - self.hitbox.rect.h // 2)
         self.player_side = "left" if self.vector.x < 0 else "right"
         self.distance = self.vector.length()
         self.vector.normalize_ip()
 
     def die(self):
-        super(BaseEnemy, self).die()
+        super().die()
         self.dead = True
 
     def attack(self):
@@ -261,57 +263,115 @@ class Rock(BaseGameObject):
         super().update()
 
 
-class Dog(BaseEnemy):
+class Dog(BaseEnemy): # NEEDS ATTACK LOGIC AND ANIMATION!!
     def __init__(self, x, y, pl):
         data = units_characteristics.dog
-        self.attack_cd = data["attack_cooldown"]
         super().__init__(x, y, data["img"], data["hp"], data["armor"], data["protection"], data["speed"],
-                         data["attack_cooldown"], data["damage"], data["attack_distance"], pl)
+                         data["attack_cooldown"], data["damage"], data["attack_distance"], pl,
+                         hitbox=[5, 40, 83, 32])
+
+        self.add_animation('walk-left', 'Dog/walk-left')
+        self.add_animation('walk-right', 'Dog/walk-right')
 
     def attack(self):
         self.player.take_damage(self.damage)
-        self.attack_cooldown()
+        self.attack_cooldown_func()
 
     def update(self):
         self.look_at_player()
         if self.can_attack:
-            if self.distance <= self.attack_range:
-                    self.attack()
+            if self.distance <= self.attack_range and self.can_attack:
+                self.attack()
             else:
                 self.move_to_player()
+                self.play_animation(f'walk-{self.player_side}')
         all_sprites.change_layer(self, self.global_y + self.rect.h)
         super().update()
 
 
 class Tree(BaseEnemy):
     def __init__(self, x, y, pl):
-        data = units_characteristics.dog
-        self.change_vect()
-        self.attack_cd = data["attack_cooldown"]
+        data = units_characteristics.tree
+
+        self.needles = []
+        self.attack_timer = None
+
         super().__init__(x, y, data["img"], data["hp"], data["armor"], data["protection"], data["speed"],
-                         data["attack_cooldown"], data["damage"], data["attack_distance"], pl)
+                         data["attack_cooldown"], data["damage"], data["attack_distance"], pl,
+                         hitbox=[11, 65, 73, 35])
+        self.blood_color = pygame.Color("Dark green")
+        self.change_vect()
+        self.attack_cooldown_func()
+        self.add_animation('Walk', 'Tree/Walk')
+        self.add_animation('StandUp', 'Tree/StandUp')
+        self.add_animation('Spin', 'Tree/Spin')
+        self.add_animation('Jump', 'Tree/Jump')
+        self.play_animation('StandUp', True)
+        self.play_animation('Walk', play_now=False)
 
     def change_vect(self):
-        self.vect = pygame.Vector2(random.randrange(-50, 50), random.randrange(-50, 50)).normalize() * 3
-        Timer(3, self.change_vect)
+        self.vect = pygame.Vector2(random.randrange(-3, 4, 2), random.randrange(-3, 4, 2)).normalize() * self.speed
+        timer = Timer(1, self.change_vect)
+        timer.daemon = True
+        timer.start()
+
+    def create_needles(self):
+        x = self.global_x + self.hitbox.dx + self.hitbox.rect.w // 2
+        y = self.global_y + self.hitbox.dy + self.hitbox.rect.h // 2
+        for i in range(-1, 2):
+            for g in range(-1, 2):
+                if i == g == 0:
+                    continue
+                self.needles.append(Needle(x, y, pygame.Vector2(i, g).normalize()))
+        self.play_animation('StandUp', once=True, play_now=True)
+        self.play_animation('Walk', play_now=False)
 
     def update(self):
-        self.look_at_player()
-        self.move(self.vect.x * self.speed, self.vect.y * self.speed)
-        if self.can_attack:
-            for i in self.hitbox.get_colliding_objects():
-                if pygame.sprite.collide_mask(self.hitbox, i):
-                    if hasattr(i.parent, "hp"):
-                        i.parent.take_damage(self.damage)
-                        self.attack_cooldown_func()
-        all_sprites.change_layer(self, self.global_y + self.rect.h)
+        if self.get_current_animation() == 'Walk':
+            self.look_at_player()
+            self.move(self.vect.x * self.speed, self.vect.y * self.speed)
+            if self.can_attack:
+                self.play_animation('Jump', once=True, play_now=True)
+                self.play_animation('Spin', once=True, play_now=False)
+                self.attack_timer = Timer(1, self.create_needles)
+                self.attack_timer.start()
+                self.attack_cooldown_func()
+            all_sprites.change_layer(self, self.global_y + self.rect.h)
+        super().update()
+
+    def die(self):
+        if self.attack_timer:
+            self.attack_timer.cancel()
+        super().die()
+
+
+class Needle(BaseGameObject):  # игла
+    def __init__(self, x, y, vect):
+        self.vect = vect
+        self.can_attack = True
+        self.damage = units_characteristics.tree["damage"]
+        self.speed = 10
+        super().__init__(x, y, "Needle.png", HITBOX_FULL_RECT, ENEMY_TEAM, False)
+        self.image = pygame.transform.rotate(self.image, 360 - pygame.Vector2(1, 0).angle_to(self.vect))
+
+    def update(self):
+        self.global_x += self.vect.x * self.speed
+        self.global_y += self.vect.y * self.speed
+        for i in self.hitbox.get_colliding_objects():
+            try:
+                i.parent.take_damage(self.damage)
+                self.can_attack = False
+            except AttributeError:
+                pass
+            self.die()
+        self.hitbox.set_pos(self.global_x, self.global_y)
         super().update()
 
 
 # BOSSES
 
-
 class DragonBoss(BaseEnemy):
+    # NEED TO BE TESTED
     def __init__(self, x, y, pl):
         self.positions = [[6615, 165], [7745, 165], [6615, 815], [7745, 815]]
         data = units_characteristics.dragonboss
@@ -329,7 +389,7 @@ class DragonBoss(BaseEnemy):
     def fly(self):
         self.fly_to = random.choice(self.positions)
         self.vect = pygame.Vector2(self.fly_to[0] - self.global_x,
-                              self.fly_to[1] - self.global_y).normalize() * self.fly_speed
+                                   self.fly_to[1] - self.global_y).normalize() * self.fly_speed
         if self.fly_to:
             self.flying = True
             Timer(2, self.stop_fly).start()
@@ -369,7 +429,7 @@ class Fire(BaseGameObject):
         self.parent = parent
         self.team = team
         self.can_attack = True
-        super().__init__(x, y, 'fire_img', HITBOX_FULL_RECT, team, False)
+        super().__init__(x, y, 'magicman_fire.png', HITBOX_FULL_RECT, team, False)
         self.orig_image = self.image
         Timer(5, self.die).start()
 
@@ -387,68 +447,47 @@ class Fire(BaseGameObject):
                 if pygame.sprite.collide_mask(self.hitbox, i):
                     if hasattr(i.parent, "hp"):
                         self.attack(i)
-        all_sprites.change_layer(self, self.global_y + self.rect.h)
+        all_sprites.change_layer(self, self.global_y)
         super().update()
 
 
 class NecroBoss(BaseEnemy):
     def __init__(self, x, y, pl):
-        data = units_characteristics.mini_golem
-        self.enemyes = [MiniGolem, Snake]
+        data = units_characteristics.necroboss
+        self.enemyes = [MiniGolem, Snake, Tree, Dog]
         self.minions = []
         self.can_ult = False
         super().__init__(x, y, data["img"], data["hp"], data["armor"], data["protection"], data["speed"],
                          data["attack_cooldown"], data["damage"], data["attack_distance"], pl, hitbox=[30, 60, 40, 40])
-        self.gun = Rock(x, y, self.team, data["damage"], self)
         self.new_rock_timer = None
-        self.blood_color = pygame.Color(44, 48, 47)
-        self.rock_dx, self.rock_dy = 30, 5
 
-        self.add_animation('walk-left', 'Mini-golem/walk-left')
-        self.add_animation('walk-right', 'Mini-golem/walk-right')
-        self.add_animation('attack-left', 'Mini-golem/attack-left')
-        self.add_animation('attack-right', 'Mini-golem/attack-right')
+        self.add_animation('walk-left', 'Necromancer/walk-left')
+        self.add_animation('walk-right', 'Necromancer/walk-right')
+        Timer(2, self.allow_ult).start()
 
     def attack(self):
-        if self.gun:
-            self.gun.shot()
-            self.gun = None
-            self.new_rock_timer = Timer(self.attack_cooldown, self.new_rock)
-            self.new_rock_timer.start()
-
-    def new_rock(self):
-        if self.alive():
-            self.gun = Rock(self.global_x, self.global_y, self.team, self.damage, self)
-            self.can_attack = True
-            self.gun.update()
-
-    def die(self):
-        if self.new_rock_timer:
-            self.new_rock_timer.cancel()
-        if self.gun:
-            self.gun.die()
-        super(NecroBoss, self).die()
+        NecroAttack(self.global_x + self.rect.w // 2, self.global_y + self.rect.h // 2, self.player)
+        self.attack_cooldown_func()
 
     def ult(self):
         for i in self.minions:
-            if i.dead == True:
+            if not i.alive():
                 self.minions.remove(i)
         if len(self.minions) < 3:
             count = 3 - len(self.minions)
-            for i in range(count):
-                enemy = random.choice(self.enemyes)
-                enemy.global_x, enemy.global_y = self.global_x, self.global_y
-                self.minions.append(enemy)
+            for i in random.sample(self.enemyes, count):
+                self.minions.append(i(self.global_x, self.global_y, self.player))
+            print(self.minions)
             self.can_ult = False
-            Timer(5, self.ult_cd)
+            Timer(5, self.allow_ult).start()
 
-    def ult_cd(self):
+    def allow_ult(self):
         self.can_ult = True
 
     def update(self):
         self.look_at_player()
         anim = None
-        if self.can_ult == True:
+        if self.can_ult is True:
             self.ult()
         if self.distance <= self.attack_range:
             if self.distance <= 200:
@@ -461,12 +500,39 @@ class NecroBoss(BaseEnemy):
         else:
             anim = 'walk'
             self.move_to_player()
-
-        if anim == 'attack':
-            self.play_animation(f'attack-{self.player_side}', once=True)
-        elif anim == 'walk':
-            self.play_animation(f'walk-{self.player_side}')
+        # NEED add animation to necromant
+        self.play_animation(f'walk-{self.player_side}')
 
         all_sprites.change_layer(self, self.global_y + self.rect.h)
         super().update()
 
+    def die(self):
+        for i in self.minions:
+            i.die()
+        super().die()
+
+
+class NecroAttack(BaseGameObject):
+    def __init__(self, x, y, pl):
+        pl_x = pl.hitbox.rect.x
+        pl_y = pl.hitbox.rect.y
+
+        self.speed = 10
+        self.damage = units_characteristics.necroboss["damage"]
+        super().__init__(x, y, 'NecromantAttack.png', HITBOX_FULL_RECT, ENEMY_TEAM, False)
+        self.vector = pygame.Vector2(pl_x - self.hitbox.rect.x,
+                                     pl_y - self.hitbox.rect.y).normalize()
+
+    def update(self):
+        self.global_x += self.vector.x * self.speed
+        self.global_y += self.vector.y * self.speed
+        for i in self.hitbox.get_colliding_objects():
+            if pygame.sprite.collide_mask(self.hitbox, i):
+                if hasattr(i.parent, "hp"):
+                    i.parent.take_damage(self.damage)
+                else:
+                    SquareParticle.create_particles(self.global_x, self.global_y,
+                                                    i.parent.avg_color)
+                self.die()
+        self.hitbox.set_pos(self.global_x, self.global_y)
+        super(NecroAttack, self).update()

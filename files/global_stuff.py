@@ -44,7 +44,7 @@ class Hitbox(pygame.sprite.Sprite):
         self.rect.x, self.rect.y = int(x + self.dx), int(y + self.dy)
 
     def get_colliding_objects(self, include_team_members=False, include_not_slidable_obj=False):
-        temp = pygame.sprite.spritecollide(self, hitbox_group, False, pygame.sprite.collide_rect)
+        temp = pygame.sprite.spritecollide(self, hitbox_group, False)
         temp.remove(self)
 
         if not include_not_slidable_obj:
@@ -78,6 +78,7 @@ class BaseGameObject(pygame.sprite.Sprite):
         self.__current_animation = None
         self.__animation_counter = 0
         self.__current_animation_once = False
+        self.__animation_queue = []
 
         if hitbox:
             if hitbox == HITBOX_ARROW:
@@ -112,14 +113,19 @@ class BaseGameObject(pygame.sprite.Sprite):
             except FileNotFoundError:
                 break
 
-    def play_animation(self, name: str, once=False):
+    def play_animation(self, name: str, once=False, play_now=True):
         """ Plays an animation with the name 'name'
             This can be called even if the current animation is an animation with the name 'name'
         """
-        self.__current_animation_once = once
         if self.__current_animation != name:
-            self.__animation_counter = 0
-            self.__current_animation = name
+            if play_now or self.__current_animation is None:
+                self.__animation_counter = 0
+                self.__current_animation = name
+                self.__animation_queue.clear()
+                self.__animation_queue.append(name)
+            else:
+                self.__animation_queue.append(name)
+            self.__current_animation_once = once
             if not (self in play_animation_group):
                 play_animation_group.append(self)
 
@@ -127,15 +133,20 @@ class BaseGameObject(pygame.sprite.Sprite):
         """Stops the current animation"""
         if self.__current_animation:
             self.image = self.__animations[self.__current_animation][0]
-            self.__current_animation = None
-            play_animation_group.remove(self)
+            self.__animation_queue.pop(0)
+            if len(self.__animation_queue) == 0:
+                self.__current_animation = None
+                play_animation_group.remove(self)
+            else:
+                self.__current_animation = self.__animation_queue[0]
+                self.image = self.__animations[self.__current_animation][0]
 
     def change_image(self):
         self.image = self.__animations[self.__current_animation][self.__animation_counter]
         self.__animation_counter += 1
         if self.__animation_counter >= len(self.__animations[self.__current_animation]):
             self.__animation_counter = 0
-            if self.__current_animation_once:
+            if self.__current_animation_once or len(self.__animation_queue) >= 2:
                 self.stop_animation()
 
     def get_current_animation(self):
