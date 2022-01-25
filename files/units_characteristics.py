@@ -48,7 +48,7 @@ swordman = {
     "protection": 1,
     "walk_speed": 1.0,
     "run_speed": 2.0,
-    "attack_cooldown": 1,
+    "attack_cooldown": 0.5,
     "damage": 5,
     "description": "Мастер ближнего боя - в совершенстве владеет рапирой, которой наносит проникающие удары. Носит "
                    "свою тренировочную броню, из-за чего получает на 1 меньше урона из любого источника. "
@@ -71,7 +71,7 @@ mini_golem = {
     "name": "Мини-голем",
     "img": "Mini-golem/walk-left/1.png",
     "gun_img": "RockBall.png",
-    "hp": 6,
+    "hp": 40,
     "armor": 6,
     "protection": 0,
     "speed": 0.8,
@@ -80,14 +80,40 @@ mini_golem = {
     "attack_distance": 300,
 }
 
+ice_soul = {
+    "name": "Ледяной дух",
+    "img": "Ice spirit/walk-left/1.png",
+    "gun_img": "RockBall.png",
+    "hp": 20,
+    "armor": 6,
+    "protection": 0,
+    "speed": 1.2,
+    "attack_cooldown": 2,
+    "damage": 2,
+    "attack_distance": 600,
+}
+
+fire_soul = {
+    "name": "Огненный дух",
+    "img": "Fire spirit/walk-left/1.png",
+    "hp": 20,
+    "armor": 6,
+    "protection": 0,
+    "speed": 1.2,
+    "attack_cooldown": 2,
+    "damage": 2,
+    "attack_distance": 600,
+}
+
+
 dog = {
     "name": "Пёс",
     "img": "Dog/walk-left/1.png",
     "hp": 10,
     "armor": 5,
     "protection": 0,
-    "speed": 1.5,
-    "attack_cooldown": 2,
+    "speed": 2.5,
+    "attack_cooldown": 1,
     "damage": 1,
     "attack_distance": 50,
 }
@@ -108,21 +134,21 @@ tree = {
 dragonboss = {
     "name": "Древний Дракон",
     "img": "abobus.png",
-    "hp": 30,
+    "hp": 100,
     "armor": 20,
     "protection": 0,
-    "speed": 0.8,
-    "fly_speed": 8,
-    "attack_cooldown": 2,
+    "speed": 1.5,
+    "fly_speed": 5,
+    "attack_cooldown": 3,
     "damage": 2,
-    "attack_distance": 800,
-    "m_range": 150
+    "attack_distance": 600,
+    "m_range": 50
 }
 
 necroboss = {
     "name": "Некромант",
     "img": "Mini-golem/walk-left/1.png",
-    "hp": 30,
+    "hp": 100,
     "armor": 20,
     "protection": 0,
     "speed": 0.8,

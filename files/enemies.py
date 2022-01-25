@@ -263,7 +263,7 @@ class Rock(BaseGameObject):
         super().update()
 
 
-class Dog(BaseEnemy): # NEEDS ATTACK LOGIC AND ANIMATION!!
+class Dog(BaseEnemy):
     def __init__(self, x, y, pl):
         data = units_characteristics.dog
         super().__init__(x, y, data["img"], data["hp"], data["armor"], data["protection"], data["speed"],
@@ -368,6 +368,161 @@ class Needle(BaseGameObject):  # игла
         super().update()
 
 
+class IceSoul(BaseEnemy):
+    def __init__(self, x, y, pl):
+        data = units_characteristics.ice_soul
+        super().__init__(x, y, data["img"], data["hp"], data["armor"], data["protection"], data["speed"],
+                         data["attack_cooldown"], data["damage"], data["attack_distance"], pl, hitbox=[30, 60, 40, 40])
+        self.gun = Ice(x, y, self.team, data["damage"], self)
+        self.new_ice_timer = None
+        self.blood_color = pygame.Color(84, 94, 176)
+        self.rock_dx, self.rock_dy = 30, 5
+
+        self.add_animation('walk-left', 'Ice spirit/walk-left')
+        self.add_animation('walk-right', 'Ice spirit/walk-right')
+        self.add_animation('attack-left', 'Ice spirit/attack-left')
+        self.add_animation('attack-right', 'Ice spirit/attack-right')
+
+    def attack(self):
+        if self.gun:
+            self.gun.shot()
+            self.gun = None
+            self.new_ice_timer = Timer(self.attack_cooldown, self.new_rock)
+            self.new_ice_timer.start()
+
+    def new_rock(self):
+        if self.alive():
+            self.gun = Ice(self.global_x, self.global_y, self.team, self.damage, self)
+            self.can_attack = True
+            self.gun.update()
+
+    def die(self):
+        if self.new_ice_timer:
+            self.new_ice_timer.cancel()
+        if self.gun:
+            self.gun.die()
+        super(IceSoul, self).die()
+
+    def update(self):
+        self.look_at_player()
+        anim = None
+        if self.distance <= self.attack_range:
+            if self.distance <= 200:
+                anim = 'walk'
+                self.move_away_from_player()
+            if self.can_attack:
+                self.can_attack = False
+                anim = 'attack'
+                Timer(0.7, self.attack).start()
+        else:
+            anim = 'walk'
+            self.move_to_player()
+
+        if anim == 'attack':
+            self.play_animation(f'attack-{self.player_side}', once=True)
+        elif anim == 'walk':
+            self.play_animation(f'walk-{self.player_side}')
+
+        all_sprites.change_layer(self, self.global_y + self.rect.h)
+        super().update()
+
+
+class Ice(BaseGameObject):
+    def __init__(self, x, y, team, damage, parent: BaseEnemy = False):
+        self.damage = damage
+        self.parent = parent
+        self.angle = 0
+        self.speed = 10
+        self.shooted = False
+        self.vector = pygame.Vector2(0, 0)
+        self.dx = 25
+        self.dy = -15
+        super().__init__(x, y, units_characteristics.ice_soul['gun_img'], HITBOX_FULL_RECT, team, False)
+        self.orig_image = self.image
+
+    def shot(self):
+        x = self.parent.player.hitbox.rect.x
+        y = self.parent.player.hitbox.rect.y
+        self.vector = pygame.Vector2(x - self.hitbox.rect.x,
+                                     y - self.hitbox.rect.y).normalize()
+        self.hitbox.mask = pygame.mask.from_surface(self.image)
+        self.shooted = True
+
+    def update_angle(self):
+        x, y = self.parent.player.global_x, self.parent.player.global_y
+        self.angle = pygame.Vector2(x - self.parent.hitbox.rect.x - self.dx, y - self.parent.hitbox.rect.y - self.dy) \
+            .normalize().angle_to(pygame.Vector2(1, 0))
+        if self.angle < 0:
+            self.angle += 360
+
+    def update(self):
+        all_sprites.change_layer(self, self.hitbox.rect.bottom)
+        if self.shooted:
+            self.global_x += self.vector.x * self.speed
+            self.global_y += self.vector.y * self.speed
+            for i in self.hitbox.get_colliding_objects():
+                if pygame.sprite.collide_mask(self.hitbox, i):
+                    if hasattr(i.parent, "hp"):
+                        i.parent.take_damage(self.damage)
+                        i.parent.get_slowing_down_effect(2, 0.25)
+                    else:
+                        SquareParticle.create_particles(self.global_x, self.global_y,
+                                                        i.parent.avg_color)
+                    self.die()
+        else:
+            self.update_angle()
+            self.set_pos(self.parent.hitbox.rect.x + 50 * math.cos(self.angle / 180 * math.pi) + self.dx,
+                         self.parent.hitbox.rect.y - 40 * math.sin(self.angle / 180 * math.pi) + self.dy)
+
+        self.hitbox.set_pos(self.global_x, self.global_y)
+        super().update()
+
+
+class FireSoul(BaseEnemy):
+    def __init__(self, x, y, pl):
+        data = units_characteristics.fire_soul
+        super().__init__(x, y, data["img"], data["hp"], data["armor"], data["protection"], data["speed"],
+                         data["attack_cooldown"], data["damage"], data["attack_distance"], pl, hitbox=[30, 60, 40, 40])
+        self.blood_color = pygame.Color(201, 52, 62)
+
+        self.add_animation('walk-left', 'Fire spirit/walk-left')
+        self.add_animation('walk-right', 'Fire spirit/walk-right')
+        self.add_animation('attack-left', 'Fire spirit/attack-left')
+        self.add_animation('attack-right', 'Fire spirit/attack-right')
+
+    def attack(self):
+        pos = [self.player.global_x, self.player.global_y]
+        Timer(0.1, self.fire_attack, pos).start()
+        self.attack_cooldown_func()
+
+    def fire_attack(self, x, y):
+        self.fire = Fire(x, y, self.team, self.damage, self)
+
+    def update(self):
+        self.look_at_player()
+        anim = None
+        if self.distance <= self.attack_range:
+            if self.distance <= 200:
+                anim = 'walk'
+                self.move_away_from_player()
+            if self.can_attack:
+                self.can_attack = False
+                anim = 'attack'
+                Timer(0.7, self.attack).start()
+        else:
+            anim = 'walk'
+            self.move_to_player()
+
+        if anim == 'attack':
+            self.play_animation(f'attack-{self.player_side}', once=True)
+        elif anim == 'walk':
+            self.play_animation(f'walk-{self.player_side}')
+
+        all_sprites.change_layer(self, self.global_y + self.rect.h)
+        super().update()
+
+
+
 # BOSSES
 
 class DragonBoss(BaseEnemy):
@@ -383,20 +538,27 @@ class DragonBoss(BaseEnemy):
                          data["attack_cooldown"], data["damage"], data["attack_distance"], pl)
 
     def attack(self):
-        self.fire = Fire(self.player.global_x, self.player.global_y, self.team, self.damage, self)
+        pos = [self.player.global_x, self.player.global_y]
+        Timer(0.25, self.fire_attack, pos).start()
         self.attack_cooldown_func()
 
     def fly(self):
         self.fly_to = random.choice(self.positions)
+        while pygame.Vector2.distance_to(pygame.Vector2(self.global_x, self.global_y),
+                                         pygame.Vector2(self.fly_to[0], self.fly_to[1])) <= 500:
+            self.fly_to = random.choice(self.positions)
         self.vect = pygame.Vector2(self.fly_to[0] - self.global_x,
                                    self.fly_to[1] - self.global_y).normalize() * self.fly_speed
         if self.fly_to:
             self.flying = True
-            Timer(2, self.stop_fly).start()
+            Timer(1, self.stop_fly).start()
 
     def stop_fly(self):
         self.flying = False
         self.can_attack = True
+
+    def fire_attack(self, x, y):
+        self.fire = Fire(x, y, self.team, self.damage, self)
 
     def m_attack(self):
         self.player.take_damage(self.damage)
@@ -413,10 +575,12 @@ class DragonBoss(BaseEnemy):
                 if self.distance <= self.meele_range:
                     if self.can_attack:
                         self.m_attack()
+                        self.can_attack = False
                 else:
+                    self.move_to_player()
                     if self.can_attack:
                         self.attack()
-                        self.fly()
+                        self.can_attack = False
             else:
                 self.move_to_player()
         all_sprites.change_layer(self, self.global_y + self.rect.h)
