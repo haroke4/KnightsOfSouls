@@ -387,10 +387,10 @@ class IceSoul(BaseEnemy):
         if self.gun:
             self.gun.shot()
             self.gun = None
-            self.new_ice_timer = Timer(self.attack_cooldown, self.new_rock)
+            self.new_ice_timer = Timer(self.attack_cooldown, self.new_ice)
             self.new_ice_timer.start()
 
-    def new_rock(self):
+    def new_ice(self):
         if self.alive():
             self.gun = Ice(self.global_x, self.global_y, self.team, self.damage, self)
             self.can_attack = True
@@ -464,7 +464,7 @@ class Ice(BaseGameObject):
                 if pygame.sprite.collide_mask(self.hitbox, i):
                     if hasattr(i.parent, "hp"):
                         i.parent.take_damage(self.damage)
-                        i.parent.get_slowing_down_effect(2, 0.25)
+                        i.parent.get_slowing_down_effect(2, 0.75)
                     else:
                         SquareParticle.create_particles(self.global_x, self.global_y,
                                                         i.parent.avg_color)
@@ -536,6 +536,7 @@ class DragonBoss(BaseEnemy):
         self.meele_range = data["m_range"]
         super().__init__(x, y, data["img"], data["hp"], data["armor"], data["protection"], data["speed"],
                          data["attack_cooldown"], data["damage"], data["attack_distance"], pl)
+        self.attack_cooldown_func()
 
     def attack(self):
         pos = [self.player.global_x, self.player.global_y]
@@ -700,3 +701,82 @@ class NecroAttack(BaseGameObject):
                 self.die()
         self.hitbox.set_pos(self.global_x, self.global_y)
         super(NecroAttack, self).update()
+
+
+class Hunter(BaseEnemy):
+    def __init__(self, x, y, pl):
+        data = units_characteristics.hunter
+        self.can_ult = False
+        super().__init__(x, y, data["img"], data["hp"], data["armor"], data["protection"], data["speed"],
+                         data["attack_cooldown"], data["damage"], data["attack_distance"], pl, hitbox=[30, 60, 40, 40])
+
+        # self.add_animation('walk-left', 'hunter/walk-left')
+        # self.add_animation('walk-right', 'hunter/walk-right')
+        Timer(2, self.allow_ult).start()
+
+    def attack(self):
+        HunterAttack(self.global_x + self.rect.w // 2, self.global_y + self.rect.h // 2, self.player)
+        self.attack_cooldown_func()
+        self.speed = self.initial_speed
+
+    def ult(self):
+        self.enemyes = [Dog, Dog, Dog]
+        Dog(self.global_x - 100, self.global_y - 200, self.player)
+        Dog(self.global_x - 100, self.global_y + 200, self.player)
+        Dog(self.global_x - 100, self.global_y, self.player)
+        self.can_ult = False
+
+    def allow_ult(self):
+        self.can_ult = True
+
+    def update(self):
+        self.look_at_player()
+        anim = None
+        if self.can_ult:
+            self.ult()
+        if self.distance <= self.attack_range:
+            if self.distance <= 500:
+                anim = 'walk'
+                self.move_away_from_player()
+            if self.can_attack:
+                self.can_attack = False
+                anim = 'attack'
+                self.speed += 100
+                self.move_away_from_player()
+                self.speed = 0
+                Timer(1, self.attack).start()
+        else:
+            anim = 'walk'
+            self.move_to_player()
+        # NEED add animation to Hunter
+        # self.play_animation(f'walk-{self.player_side}')
+
+        all_sprites.change_layer(self, self.global_y + self.rect.h)
+        super().update()
+
+
+class HunterAttack(BaseGameObject):
+    def __init__(self, x, y, pl):
+        pl_x = pl.hitbox.rect.x
+        pl_y = pl.hitbox.rect.y
+
+        self.speed = 10
+        self.damage = units_characteristics.hunter["damage"]
+        super().__init__(x, y, 'RockBall.png', HITBOX_FULL_RECT, ENEMY_TEAM, False)
+        self.vector = pygame.Vector2(pl_x - self.hitbox.rect.x,
+                                     pl_y - self.hitbox.rect.y).normalize()
+
+    def update(self):
+        self.global_x += self.vector.x * self.speed
+        self.global_y += self.vector.y * self.speed
+        for i in self.hitbox.get_colliding_objects():
+            if pygame.sprite.collide_mask(self.hitbox, i):
+                if hasattr(i.parent, "hp"):
+                    i.parent.take_damage(self.damage)
+                    i.parent.get_slowing_down_effect(2, 0)
+                else:
+                    SquareParticle.create_particles(self.global_x, self.global_y,
+                                                    i.parent.avg_color)
+                self.die()
+        self.hitbox.set_pos(self.global_x, self.global_y)
+        super(HunterAttack, self).update()

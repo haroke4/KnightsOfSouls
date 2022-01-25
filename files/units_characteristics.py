@@ -109,12 +109,12 @@ fire_soul = {
 dog = {
     "name": "Пёс",
     "img": "Dog/walk-left/1.png",
-    "hp": 10,
-    "armor": 5,
+    "hp": 30,
+    "armor": 0,
     "protection": 0,
     "speed": 2.5,
     "attack_cooldown": 1,
-    "damage": 1,
+    "damage": 2,
     "attack_distance": 50,
 }
 
@@ -147,13 +147,24 @@ dragonboss = {
 
 necroboss = {
     "name": "Некромант",
-    "img": "Mini-golem/walk-left/1.png",
+    "img": "",
     "hp": 100,
     "armor": 20,
     "protection": 0,
     "speed": 0.8,
-    "fly_speed": 2,
     "attack_cooldown": 2,
     "damage": 2,
     "attack_distance": 500,
+}
+
+hunter = {
+    "name": "Охотник",
+    "img": "abobus.png",
+    "hp": 50,
+    "armor": 20,
+    "protection": 0,
+    "speed": 1,
+    "attack_cooldown": 5,
+    "damage": 5,
+    "attack_distance": 1000,
 }
