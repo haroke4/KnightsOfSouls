@@ -115,7 +115,6 @@ class Game:
     def next_floor(self):
         self.level_just_finished = False
         self.playing = False
-
         self.transition_counter = 0
         self.transitioning = [self.fade_in]
         while self.transitioning:
@@ -124,6 +123,11 @@ class Game:
             i.die()
         for i in self.right_walls + self.left_walls + self.other_environment:
             i.die()
+
+        self.items_on_maps.clear()
+        self.right_walls.clear()
+        self.left_walls.clear()
+        self.other_environment.clear()
 
         self.generate_levels()
         self.player.set_pos(*self.player_start_pos[0])
@@ -166,30 +170,23 @@ class Game:
         self.left_walls[0][1].die()
         del self.left_walls[0]
         self.left_walls.append(Wall(1472 * (self.current_level - 1) + self.dx, 0, "Environment/LeftWall0.png"))
-
         for i in range(1):
             self.current_level_mobs.append(
-                DragonBoss(random.randrange(1472 * (self.current_level - 1) + TILE_WIDTH + self.dx,
-                                            1472 * (self.current_level - 1) + 1000 + self.dx),
-                           random.randrange(TILE_HEIGHT, 1024 - TILE_HEIGHT * 3),
-                           self.player)
+                MiniGolem(random.randrange(1472 * (self.current_level - 1) + TILE_WIDTH + self.dx,
+                                           1472 * (self.current_level - 1) + 1000 + self.dx),
+                          random.randrange(TILE_HEIGHT, 1024 - TILE_HEIGHT * 3),
+                          self.player)
             )
 
     def start_boss_fighting(self):
         print("START BOSS FIGHT")
+        # closing door
         self.level_just_finished = False
         self.left_walls[0][0].die()
         self.left_walls[0][1].die()
         del self.left_walls[0]
-
         self.left_walls.append(Wall(1472 * (self.current_level - 1) + self.dx, 0, "Environment/LeftWall0.png"))
 
-        self.current_level_mobs.append(
-            DragonBoss(random.randrange(1472 * (self.current_level - 1) + TILE_WIDTH + self.dx,
-                                        1472 * (self.current_level - 1) + 1000 + self.dx),
-                       random.randrange(TILE_HEIGHT, 1024 - TILE_HEIGHT * 3),
-                       self.player)
-        )
         """there is no cause there is no BOSSES !"""
 
     def run(self):
