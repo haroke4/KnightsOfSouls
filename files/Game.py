@@ -11,7 +11,7 @@ from files.items import get_random_item
 from files.global_stuff import *
 from files.units_characteristics import increase_mob_characteristics
 
-from files.items import EnergyDrink # для спидрана
+from files.items import EnergyDrink  # для спидрана
 
 # pygame stuff below
 print(WIDTH, HEIGHT)
@@ -175,11 +175,8 @@ class Game:
         self.left_walls.append(Wall(1472 * (self.current_level - 1) + self.dx, 0, "Environment/LeftWall0.png"))
         for i in range(1):
             self.current_level_mobs.append(
-                DragonBoss(random.randrange(1472 * (self.current_level - 1) + TILE_WIDTH + self.dx,
-                                     1472 * (self.current_level - 1) + 1000 + self.dx),
-                    random.randrange(TILE_HEIGHT, 1024 - TILE_HEIGHT * 3), self.player)
+                Hunter(TILE_WIDTH + self.dx + 50, 150, self.player)
             )
-
 
     def start_boss_fighting(self):
         print("START BOSS FIGHT")

@@ -26,14 +26,18 @@ class LayeredUpdates(pygame.sprite.LayeredUpdates):
             if not (sprite.rect.right < draw_area["l"] or sprite.rect.left > draw_area["r"] or
                     sprite.rect.bottom < draw_area["t"] or sprite.rect.top > draw_area["b"]):
                 try:
-                    surface.blit(sprite.image, sprite.rect)
+                    if type(sprite) == Hitbox:
+                        rect = pygame.Rect(*from_global_to_local_pos(sprite.rect.x, sprite.rect.y), sprite.rect.w, sprite.rect.h)
+                    else:
+                        rect = sprite.rect
+                    surface.blit(sprite.image, rect)
                 except pygame.error:
                     pass
 
 
 class Hitbox(pygame.sprite.Sprite):
     def __init__(self, dx, dy, width, height, parent, can_slide):
-        super().__init__(hitbox_group)  # add second argument "all_sprites" to show image of hitbox
+        super().__init__(hitbox_group, all_sprites)  # add second argument "all_sprites" to show image of hitbox
         self.rect = pygame.Rect(0, 0, width, height)
         self.image = pygame.Surface((width, height))
         self.dx, self.dy = dx, dy

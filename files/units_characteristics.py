@@ -142,7 +142,7 @@ dragonboss = {
     "attack_cooldown": 3,
     "damage": 2,
     "attack_distance": 600,
-    "m_range": 50
+    "m_range": 75
 }
 
 necroboss = {

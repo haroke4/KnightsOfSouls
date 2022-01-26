@@ -29,7 +29,7 @@ class BaseEnemy(BaseGameObject):
         self.distance = 0  # текущяя дистанция между игроком и мобом
         self.attack_range = attack_range
         if not hitbox:
-            hitbox = [6, 35, 36, 15]
+            hitbox = [12, 33, 22, 14]
         super().__init__(x, y, image, hitbox, ENEMY_TEAM)
 
     def take_damage(self, damage, from_candle=False, count_of_particles=10):
@@ -54,12 +54,10 @@ class BaseEnemy(BaseGameObject):
 
     def look_at_player(self):
         """Меняет вектор self.vector и измеряет растояние """
-        self.vector = pygame.Vector2(self.player.hitbox.rect.x + self.player.hitbox.rect.w // 2 - \
-                                     self.hitbox.rect.x - self.hitbox.rect.w // 2,
-                                     self.player.hitbox.rect.y + self.player.hitbox.rect.h // 2 - \
-                                     self.hitbox.rect.y - self.hitbox.rect.h // 2)
-        self.player_side = "left" if self.vector.x < 0 else "right"
+        self.vector = pygame.Vector2(self.player.hitbox.rect.centerx - self.hitbox.rect.centerx,
+                                     self.player.hitbox.rect.centery - self.hitbox.rect.centery)
         self.distance = self.vector.length()
+        self.player_side = "left" if self.vector.x < 0 else "right"
         self.vector.normalize_ip()
 
     def die(self):
@@ -266,12 +264,14 @@ class Rock(BaseGameObject):
 
 
 class Dog(BaseEnemy):
-    def __init__(self, x, y, pl):
+    def __init__(self, x, y, pl, from_hunter=False):
         data = units_characteristics.dog
         super().__init__(x, y, data["img"], data["hp"], data["armor"], data["protection"], data["speed"],
                          data["attack_cooldown"], data["damage"], data["attack_distance"], pl,
                          hitbox=[5, 40, 83, 32])
-
+        if from_hunter:
+            self.global_x -= self.rect.w // 2
+            self.global_y -= self.rect.h // 2
         self.add_animation('walk-left', 'Dog/walk-left')
         self.add_animation('walk-right', 'Dog/walk-right')
 
@@ -494,7 +494,7 @@ class FireSoul(BaseEnemy):
 
     def attack(self):
         pos = [self.player.global_x, self.player.global_y]
-        Timer(0.1, self.fire_attack, pos).start()
+        self.fire_attack(*pos)
         self.attack_cooldown_func()
 
     def fire_attack(self, x, y):
@@ -524,11 +524,10 @@ class FireSoul(BaseEnemy):
         super().update()
 
 
-
 # BOSSES
 
 class DragonBoss(BaseEnemy):
-    # NEED TO BE TESTED
+    # Добавить анимаций и подправить хитбокс
     def __init__(self, x, y, pl):
         self.positions = [[6615, 165], [7745, 165], [6615, 815], [7745, 815]]
         data = units_characteristics.dragonboss
@@ -536,13 +535,13 @@ class DragonBoss(BaseEnemy):
         self.fly_to = None
         self.flying = False
         self.meele_range = data["m_range"]
+        self.speed_accelerator_timer = None
         super().__init__(x, y, data["img"], data["hp"], data["armor"], data["protection"], data["speed"],
                          data["attack_cooldown"], data["damage"], data["attack_distance"], pl)
         self.attack_cooldown_func()
 
     def attack(self):
-        pos = [self.player.global_x, self.player.global_y]
-        Timer(0.1, self.fire_attack, pos).start()
+        Timer(0.1, self.fire_attack).start()
         self.attack_cooldown_func()
 
     def fly(self):
@@ -560,10 +559,17 @@ class DragonBoss(BaseEnemy):
         self.flying = False
         self.can_attack = True
 
-    def fire_attack(self, x, y):
-        self.fire = Fire(x, y, self.team, self.damage, self)
+    def fire_attack(self):
+        self.fire = Fire(self.player.global_x, self.player.global_y, self.team, self.damage, self)
+
+    def accelerate(self):
+        """Если мы не догоним игрока в течений 10 секунд тогда мы ускоримся в 2 раза"""
+        self.speed = self.initial_speed * 2
 
     def m_attack(self):
+        if self.speed_accelerator_timer:
+            self.speed_accelerator_timer.cancel()
+            self.speed_accelerator_timer = None
         self.player.take_damage(self.damage)
         self.attack_cooldown_func()
         self.fly()
@@ -579,15 +585,17 @@ class DragonBoss(BaseEnemy):
                     self.move_to_player()
                     if self.can_attack:
                         self.m_attack()
-                        self.can_attack = False
                 else:
                     self.move_to_player()
                     if self.can_attack:
                         self.attack()
-                        self.can_attack = False
+                    if not self.speed_accelerator_timer:
+                        self.speed_accelerator_timer = Timer(10, self.accelerate)
+                        self.speed_accelerator_timer.daemon = True
+                        self.speed_accelerator_timer.start()
             else:
                 self.move_to_player()
-        all_sprites.change_layer(self, self.global_y + self.rect.h)
+        all_sprites.change_layer(self, self.hitbox.rect.bottom)
         super().update()
 
 
@@ -597,34 +605,26 @@ class Fire(BaseGameObject):
         self.parent = parent
         self.team = team
         self.can_attack = False
+        self.damage_taken_players = []
         super().__init__(x, y, 'drago_attack.png', HITBOX_FULL_RECT, team, False)
-        self.orig_image = self.image
-        self.pre_attack_img = pygame.image.load('files/img/drago_pre_attack.png')
-        self.image = self.pre_attack_img
-        Timer(0.5, self.change_img).start()
-        Timer(0.5, self.change_pre_attack).start()
+        self.image = pygame.image.load('files/img/drago_pre_attack.png')
+        Timer(0.5, self.enable_attack).start()
         Timer(5, self.die).start()
 
-    def change_img(self):
-        self.image = self.orig_image
-
-    def change_pre_attack(self):
-        self.can_attack = True
-
-    def cooldown(self):
+    def enable_attack(self):
+        self.image = self.initial_image
         self.can_attack = True
 
     def attack(self, i):
-        i.parent.take_damage(self.damage)
-        self.can_attack = False
-        Timer(2, self.cooldown)
+        if i not in self.damage_taken_players:  # если игрок не в  нашем буфере тогда заносим его в буфер
+            i.parent.take_damage(self.damage)
+            self.damage_taken_players.append(i)
 
     def update(self):
         if self.can_attack:
             for i in self.hitbox.get_colliding_objects():
-                if pygame.sprite.collide_mask(self.hitbox, i):
-                    if hasattr(i.parent, "hp"):
-                        self.attack(i)
+                if hasattr(i.parent, "hp"):
+                    self.attack(i)
         all_sprites.change_layer(self, self.global_y)
         super().update()
 
@@ -720,24 +720,31 @@ class Hunter(BaseEnemy):
     def __init__(self, x, y, pl):
         data = units_characteristics.hunter
         self.can_ult = False
+        self.dogs = []
         super().__init__(x, y, data["img"], data["hp"], data["armor"], data["protection"], data["speed"],
-                         data["attack_cooldown"], data["damage"], data["attack_distance"], pl, hitbox=[30, 60, 40, 40])
+                         data["attack_cooldown"], data["damage"], data["attack_distance"], pl)
 
         # self.add_animation('walk-left', 'hunter/walk-left')
         # self.add_animation('walk-right', 'hunter/walk-right')
-        Timer(2, self.allow_ult).start()
+        Timer(5, self.allow_ult).start()
 
     def attack(self):
-        HunterAttack(self.global_x + self.rect.w // 2, self.global_y + self.rect.h // 2, self.player)
+        HunterAttack(self.global_x + self.rect.w // 2 + 20 * self.vector.x,
+                     self.global_y + self.rect.h // 2 + 20 * self.vector.y, self.vector)
         self.attack_cooldown_func()
         self.speed = self.initial_speed
 
+    def create_dog(self):
+        x = self.global_x + self.rect.w // 2 + 50 * (1 if self.vector.x > 0 else -1)
+        y = self.global_y + self.rect.h // 2 + 50 * (1 if self.vector.y > 0 else -1)
+        self.dogs.append(Dog(x, y, self.player, from_hunter=True))
+
     def ult(self):
-        self.enemyes = [
-                Dog(self.global_x - 100, self.global_y - 200, self.player),
-                Dog(self.global_x - 100, self.global_y + 200, self.player),
-                Dog(self.global_x - 100, self.global_y, self.player),
-            ]
+        """СОЗДАЕМ 3 СОБАК С ИНТЕРВАЛОМ в 1,5 СЕКУНДЫ"""
+        self.create_dog()
+        Timer(1.5, self.create_dog).start()
+        Timer(3, self.create_dog).start()
+
         self.can_ult = False
 
     def allow_ult(self):
@@ -755,7 +762,6 @@ class Hunter(BaseEnemy):
             if self.can_attack:
                 self.can_attack = False
                 anim = 'attack'
-                self.speed += 100
                 self.move_away_from_player()
                 self.speed = 0
                 Timer(1, self.attack).start()
@@ -765,20 +771,16 @@ class Hunter(BaseEnemy):
         # NEED add animation to Hunter
         # self.play_animation(f'walk-{self.player_side}')
 
-        all_sprites.change_layer(self, self.global_y + self.rect.h)
+        all_sprites.change_layer(self, self.hitbox.rect.bottom)
         super().update()
 
 
 class HunterAttack(BaseGameObject):
-    def __init__(self, x, y, pl):
-        pl_x = pl.hitbox.rect.x
-        pl_y = pl.hitbox.rect.y
-
-        self.speed = 15
+    def __init__(self, x, y, vector):
+        self.speed = 10
         self.damage = units_characteristics.hunter["damage"]
         super().__init__(x, y, 'RockBall.png', HITBOX_FULL_RECT, ENEMY_TEAM, False)
-        self.vector = pygame.Vector2(pl_x - self.hitbox.rect.x,
-                                     pl_y - self.hitbox.rect.y).normalize()
+        self.vector = vector
 
     def update(self):
         self.global_x += self.vector.x * self.speed
@@ -793,7 +795,7 @@ class HunterAttack(BaseGameObject):
                                                     i.parent.avg_color)
                 self.die()
         self.hitbox.set_pos(self.global_x, self.global_y)
-        super(HunterAttack, self).update()
+        super().update()
 
 
 class Golem(BaseEnemy):

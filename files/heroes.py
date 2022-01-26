@@ -20,7 +20,7 @@ class BaseHero(BaseGameObject):
         self.running = False
         self.gun = None
         self.velocity = pygame.Vector2(0, 0)
-        super().__init__(x, y, image, [6, 35, 36, 15], PLAYER_TEAM)
+        super().__init__(x, y, image, [11, 36, 27, 22], PLAYER_TEAM)
         self.damage_multiplier = 1
         self.candle_damage = 0  # для предмета "свеча"
         self.has_cross = False  # for item Cross
