@@ -114,6 +114,12 @@ class Game:
         self.render_text = f"YOU DIED"
         self.transitioning = [self.fade_in, self.render_center_text]
         self.playing = False
+        con = sqlite3.connect("Statistics.sqlite")
+        cur = con.cursor()
+        for i in temp_stats:
+            update_statistics(i, cur)
+        con.commit()
+        con.close()
 
     def next_floor(self):
         self.level_just_finished = False
@@ -145,6 +151,12 @@ class Game:
         self.render_text = f"FLOOR " + str(self.floor)
         self.transitioning = [self.fade_out, self.render_center_text]
         self.playing = True
+        con = sqlite3.connect("statistics.sqlite")
+        cur = con.cursor()
+        for i in temp_stats:
+            update_statistics(i, cur)
+        con.commit()
+        con.close()
 
         print('aboba')
 
@@ -209,6 +221,12 @@ class Game:
 
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_q:
+                        con = sqlite3.connect("Statistics.sqlite")
+                        cur = con.cursor()
+                        for i in temp_stats:
+                            update_statistics(i, cur)
+                        con.commit()
+                        con.close()
                         running = False
 
                     elif event.key == pygame.K_ESCAPE:

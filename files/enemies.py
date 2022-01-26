@@ -4,7 +4,7 @@ import random
 import pygame
 from threading import Timer
 from files.particles import SquareParticle
-from files.global_stuff import BaseGameObject, all_sprites, ENEMY_TEAM, HITBOX_FULL_RECT, WIDTH, HEIGHT
+from files.global_stuff import BaseGameObject, all_sprites, ENEMY_TEAM, HITBOX_FULL_RECT, WIDTH, HEIGHT, temp_stats
 from files import units_characteristics
 
 
@@ -61,6 +61,7 @@ class BaseEnemy(BaseGameObject):
         self.vector.normalize_ip()
 
     def die(self):
+        temp_stats[self.__class__.__name__] += 1
         super().die()
         self.dead = True
 

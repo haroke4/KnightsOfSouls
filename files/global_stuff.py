@@ -2,6 +2,7 @@
 Глобальные нужные вещи (камера, константы, переменные)
 """
 import pygame
+import sqlite3
 import ctypes
 
 
@@ -18,6 +19,13 @@ def change_draw_area(new_left, new_top, new_right, new_bottom):
     draw_area["t"] = new_top
     draw_area["r"] = new_right
     draw_area["b"] = new_bottom
+
+
+def update_statistics(name_of_mob, cur):
+    res = cur.execute("SELECT kills FROM Info WHERE name = '{}'".format(name_of_mob)).fetchone()[0]
+    cur.execute("""UPDATE Info
+                            SET kills = {}
+                            WHERE name = '{}'""".format(res + temp_stats[name_of_mob], name_of_mob))
 
 
 class LayeredUpdates(pygame.sprite.LayeredUpdates):
@@ -187,3 +195,17 @@ draw_area = {"l": 0, "t": 0, "r": WIDTH, "b": HEIGHT}  # left top right bottom
 take_damage = []  # for multiplayer
 
 CAMERA = Camera()
+
+# Statistics stuff below
+temp_stats = {
+    "MiniGolem": 0,
+    "Snake": 0,
+    "Dog": 0,
+    "Tree": 0,
+    "IceSoul": 0,
+    "FireSoul": 0,
+    "DragonBoss": 0,
+    "NecroBoss": 0,
+    "Hunter": 0,
+    "Golem": 0
+}
