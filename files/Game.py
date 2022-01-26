@@ -175,7 +175,7 @@ class Game:
         self.left_walls.append(Wall(1472 * (self.current_level - 1) + self.dx, 0, "Environment/LeftWall0.png"))
         for i in range(1):
             self.current_level_mobs.append(
-                Hunter(random.randrange(1472 * (self.current_level - 1) + TILE_WIDTH + self.dx,
+                DragonBoss(random.randrange(1472 * (self.current_level - 1) + TILE_WIDTH + self.dx,
                                      1472 * (self.current_level - 1) + 1000 + self.dx),
                     random.randrange(TILE_HEIGHT, 1024 - TILE_HEIGHT * 3), self.player)
             )

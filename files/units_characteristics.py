@@ -151,9 +151,9 @@ necroboss = {
     "hp": 100,
     "armor": 20,
     "protection": 0,
-    "speed": 0.8,
+    "speed": 1.2,
     "attack_cooldown": 2,
-    "damage": 2,
+    "damage": 3,
     "attack_distance": 500,
 }
 
@@ -163,8 +163,20 @@ hunter = {
     "hp": 50,
     "armor": 20,
     "protection": 0,
-    "speed": 1,
-    "attack_cooldown": 5,
-    "damage": 5,
+    "speed": 0.8,
+    "attack_cooldown": 2,
+    "damage": 3,
     "attack_distance": 1000,
+}
+
+golem = {
+    "name": "Голем",
+    "img": "abobus.png",
+    "hp": 100,
+    "armor": 0,
+    "protection": 1,
+    "speed": 1.2,
+    "attack_cooldown": 2,
+    "damage": 3,
+    "attack_distance": 600,
 }

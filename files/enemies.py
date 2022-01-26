@@ -24,6 +24,7 @@ class BaseEnemy(BaseGameObject):
         self.player_side = "left"
         self.blood_color = pygame.Color("red")
         self.dead = False
+        self.invulnerability = False
 
         self.distance = 0  # текущяя дистанция между игроком и мобом
         self.attack_range = attack_range
@@ -32,23 +33,24 @@ class BaseEnemy(BaseGameObject):
         super().__init__(x, y, image, hitbox, ENEMY_TEAM)
 
     def take_damage(self, damage, from_candle=False, count_of_particles=10):
-        damage = damage - self.protection
-        print(f'{self.__class__.__name__} : {damage}')  # ДЛЯ ДЕБАГГИНГА
-        if damage > 0:
-            self.armor -= damage
-            if self.armor < 0:
-                self.hp -= abs(self.armor)
-                if self.hp <= 0:
-                    self.die()
-                self.armor = 0
+        if not self.invulnerability:
+            damage = damage - self.protection
+            print(f'{self.__class__.__name__} : {damage}')  # ДЛЯ ДЕБАГГИНГА
+            if damage > 0:
+                self.armor -= damage
+                if self.armor < 0:
+                    self.hp -= abs(self.armor)
+                    if self.hp <= 0:
+                        self.die()
+                    self.armor = 0
 
-        if self.alive():
-            if from_candle:
-                SquareParticle.create_particles(self.global_x + self.rect.w // 2, self.global_y + self.rect.h // 2,
-                                                pygame.Color("orange"), count_of_particles)
-            else:
-                SquareParticle.create_particles(self.global_x + self.rect.w // 2, self.global_y + self.rect.h // 2,
-                                                self.blood_color, count_of_particles)
+            if self.alive():
+                if from_candle:
+                    SquareParticle.create_particles(self.global_x + self.rect.w // 2, self.global_y + self.rect.h // 2,
+                                                    pygame.Color("orange"), count_of_particles)
+                else:
+                    SquareParticle.create_particles(self.global_x + self.rect.w // 2, self.global_y + self.rect.h // 2,
+                                                    self.blood_color, count_of_particles)
 
     def look_at_player(self):
         """Меняет вектор self.vector и измеряет растояние """
@@ -540,7 +542,7 @@ class DragonBoss(BaseEnemy):
 
     def attack(self):
         pos = [self.player.global_x, self.player.global_y]
-        Timer(0.25, self.fire_attack, pos).start()
+        Timer(0.1, self.fire_attack, pos).start()
         self.attack_cooldown_func()
 
     def fly(self):
@@ -574,6 +576,7 @@ class DragonBoss(BaseEnemy):
         else:
             if self.distance <= self.attack_range:
                 if self.distance <= self.meele_range:
+                    self.move_to_player()
                     if self.can_attack:
                         self.m_attack()
                         self.can_attack = False
@@ -593,10 +596,20 @@ class Fire(BaseGameObject):
         self.damage = damage
         self.parent = parent
         self.team = team
-        self.can_attack = True
-        super().__init__(x, y, 'magicman_fire.png', HITBOX_FULL_RECT, team, False)
+        self.can_attack = False
+        super().__init__(x, y, 'drago_attack.png', HITBOX_FULL_RECT, team, False)
         self.orig_image = self.image
+        self.pre_attack_img = pygame.image.load('files/img/drago_pre_attack.png')
+        self.image = self.pre_attack_img
+        Timer(0.5, self.change_img).start()
+        Timer(0.5, self.change_pre_attack).start()
         Timer(5, self.die).start()
+
+    def change_img(self):
+        self.image = self.orig_image
+
+    def change_pre_attack(self):
+        self.can_attack = True
 
     def cooldown(self):
         self.can_attack = True
@@ -720,10 +733,11 @@ class Hunter(BaseEnemy):
         self.speed = self.initial_speed
 
     def ult(self):
-        self.enemyes = [Dog, Dog, Dog]
-        Dog(self.global_x - 100, self.global_y - 200, self.player)
-        Dog(self.global_x - 100, self.global_y + 200, self.player)
-        Dog(self.global_x - 100, self.global_y, self.player)
+        self.enemyes = [
+                Dog(self.global_x - 100, self.global_y - 200, self.player),
+                Dog(self.global_x - 100, self.global_y + 200, self.player),
+                Dog(self.global_x - 100, self.global_y, self.player),
+            ]
         self.can_ult = False
 
     def allow_ult(self):
@@ -760,7 +774,7 @@ class HunterAttack(BaseGameObject):
         pl_x = pl.hitbox.rect.x
         pl_y = pl.hitbox.rect.y
 
-        self.speed = 10
+        self.speed = 15
         self.damage = units_characteristics.hunter["damage"]
         super().__init__(x, y, 'RockBall.png', HITBOX_FULL_RECT, ENEMY_TEAM, False)
         self.vector = pygame.Vector2(pl_x - self.hitbox.rect.x,
@@ -780,3 +794,115 @@ class HunterAttack(BaseGameObject):
                 self.die()
         self.hitbox.set_pos(self.global_x, self.global_y)
         super(HunterAttack, self).update()
+
+
+class Golem(BaseEnemy):
+    def __init__(self, x, y, pl):
+        data = units_characteristics.hunter
+        self.ult_count = 1
+        self.enemyes = []
+        self.need_check = False
+        super().__init__(x, y, data["img"], data["hp"], data["armor"], data["protection"], data["speed"],
+                         data["attack_cooldown"], data["damage"], data["attack_distance"], pl, hitbox=[30, 60, 40, 40])
+
+        # self.add_animation('walk-left', 'hunter/walk-left')
+        # self.add_animation('walk-right', 'hunter/walk-right')
+
+    def ult(self):
+        self.invulnerability = True
+        self.need_check = True
+        self.ult_count -= 1
+        Timer(2, self.spawn_mini_golem).start()
+        Timer(7, self.spawn_mini_golem).start()
+        Timer(12, self.spawn_mini_golem).start()
+
+    def spawn_mini_golem(self):
+        mg = MiniGolem(self.global_x, self.global_y, self.player)
+        self.enemyes.append(mg)
+
+    def stop_ult(self):
+        self.invulnerability = False
+        self.need_check = False
+
+    def allow_ult(self):
+        self.can_ult = True
+
+    def start_check(self):
+        self.need_check = True
+
+    def check_enemyes(self):
+        i = 0
+        while i < len(self.enemyes):
+            if self.enemyes[i].dead:
+                self.enemyes.remove(self.enemyes[i])
+                i -= 1
+            i += 1
+        if len(self.enemyes) == 0:
+            self.stop_ult()
+        self.need_check = False
+
+    def m_attack(self):
+        self.player.take_damage(self.damage)
+        self.attack_cooldown_func()
+
+    def attack(self):
+        GolemAttack(self.global_x + self.rect.w // 2, self.global_y + self.rect.h // 2, self.player)
+        self.attack_cooldown_func()
+
+    def update(self):
+        if self.ult_count == 1 and self.hp <= self.max_hp // 2:
+            self.ult()
+        if self.invulnerability:
+            anim = 'ult'
+            if self.need_check:
+                Timer(3, self.check_enemyes).start()
+                Timer(4, self.start_check).start()
+                self.need_check = False
+        else:
+            self.look_at_player()
+            anim = None
+            if self.distance <= self.attack_range:
+                anim = 'walk'
+                self.move_to_player()
+                if self.distance <= 50:
+                    if self.can_attack:
+                        anim = 'attack'
+                        self.m_attack()
+                elif self.can_attack:
+                    anim = 'attack'
+                    Timer(0.5, self.attack).start()
+                    self.can_attack = False
+            else:
+                anim = 'walk'
+                self.move_to_player()
+            # NEED add animation to Golem
+            # self.play_animation(f'walk-{self.player_side}')
+
+        all_sprites.change_layer(self, self.global_y + self.rect.h)
+        super().update()
+
+
+class GolemAttack(BaseGameObject):
+    def __init__(self, x, y, pl):
+        pl_x = pl.hitbox.rect.x
+        pl_y = pl.hitbox.rect.y
+
+        self.speed = 10
+        self.damage = units_characteristics.hunter["damage"]
+        super().__init__(x, y, 'RockBall.png', HITBOX_FULL_RECT, ENEMY_TEAM, False)
+        self.vector = pygame.Vector2(pl_x - self.hitbox.rect.x,
+                                     pl_y - self.hitbox.rect.y).normalize()
+
+    def update(self):
+        self.global_x += self.vector.x * self.speed
+        self.global_y += self.vector.y * self.speed
+        for i in self.hitbox.get_colliding_objects():
+            if pygame.sprite.collide_mask(self.hitbox, i):
+                if hasattr(i.parent, "hp"):
+                    i.parent.take_damage(self.damage)
+                else:
+                    SquareParticle.create_particles(self.global_x, self.global_y,
+                                                    i.parent.avg_color)
+                self.die()
+        self.hitbox.set_pos(self.global_x, self.global_y)
+        super(GolemAttack, self).update()
