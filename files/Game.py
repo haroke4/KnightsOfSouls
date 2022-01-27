@@ -57,7 +57,7 @@ class Game:
         self.generate_levels()
 
         # self.player = SpearMan(*self.player_start_pos[0])
-        self.player = SpearMan(*self.player_start_pos[0])
+        self.player = random.choice([SpearMan, MagicMan, SwordMan])(*self.player_start_pos[0])
 
         # ui stuff
         self.bar_group = pygame.sprite.Group()
@@ -198,7 +198,7 @@ class Game:
         self.left_walls[0][1].die()
         del self.left_walls[0]
         self.left_walls.append(Wall(1472 * (self.current_level - 1) + self.dx, 0, "Environment/LeftWall0.png"))
-        for i in range(1):
+        for i in range(self.current_level + 1):
             temp = random.choice([MiniGolem, Snake, Tree, Dog, IceSoul, FireSoul])
             self.current_level_mobs.append(
                 temp(random.randrange(1472 * (self.current_level - 1) + TILE_WIDTH + self.dx,
