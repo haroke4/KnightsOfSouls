@@ -3,8 +3,8 @@
 """
 
 
-def increase_mob_characteristics(x: object) -> object:
-    for i in [mini_golem, snake]:
+def increase_mob_characteristics(x):
+    for i in [mini_golem, snake, ice_soul, fire_soul, dog, tree, dragonboss, necroboss, hunter, golem]:
         i["hp"] = x * i["hp"]
         i["armor"] = x * i["armor"]
         i["damage"] = x * i["damage"]
@@ -61,7 +61,7 @@ snake = {
     "hp": 1,
     "armor": 0,
     "protection": 0,
-    "speed": 2.5,
+    "speed": 3,
     "attack_cooldown": 2,
     "damage": 1,
     "attack_distance": 50,
@@ -83,7 +83,7 @@ mini_golem = {
 ice_soul = {
     "name": "Ледяной дух",
     "img": "Ice spirit/walk-left/1.png",
-    "gun_img": "RockBall.png",
+    "gun_img": "Ice.png",
     "hp": 20,
     "armor": 6,
     "protection": 0,
@@ -95,7 +95,8 @@ ice_soul = {
 
 fire_soul = {
     "name": "Огненный дух",
-    "img": "Fire spirit/walk-left/1.png",
+    "img": "Fire spirit/walk/1.png",
+    "gun_img": "FireBall.png",
     "hp": 20,
     "armor": 6,
     "protection": 0,
@@ -105,17 +106,16 @@ fire_soul = {
     "attack_distance": 600,
 }
 
-
 dog = {
     "name": "Пёс",
     "img": "Dog/walk-left/1.png",
-    "hp": 30,
+    "hp": 20,
     "armor": 0,
     "protection": 0,
     "speed": 2.5,
     "attack_cooldown": 1,
     "damage": 2,
-    "attack_distance": 50,
+    "attack_distance": 70,
 }
 
 tree = {
@@ -133,23 +133,23 @@ tree = {
 # BOSSES
 dragonboss = {
     "name": "Древний Дракон",
-    "img": "abobus.png",
-    "hp": 100,
-    "armor": 20,
+    "img": "Dragon/Walk-right/1.png",
+    "hp": 150,
+    "armor": 0,
     "protection": 0,
     "speed": 1.5,
     "fly_speed": 5,
     "attack_cooldown": 3,
     "damage": 2,
-    "attack_distance": 600,
-    "m_range": 75
+    "attack_distance": 1000,
+    "m_range": 100
 }
 
 necroboss = {
     "name": "Некромант",
-    "img": "",
+    "img": "Necromancer/Walk-left/1.png",
     "hp": 100,
-    "armor": 20,
+    "armor": 0,
     "protection": 0,
     "speed": 1.2,
     "attack_cooldown": 2,
@@ -159,9 +159,9 @@ necroboss = {
 
 hunter = {
     "name": "Охотник",
-    "img": "abobus.png",
-    "hp": 50,
-    "armor": 20,
+    "img": "Hunter/walk-left/1.png",
+    "hp": 80,
+    "armor": 0,
     "protection": 0,
     "speed": 0.8,
     "attack_cooldown": 2,
@@ -171,11 +171,11 @@ hunter = {
 
 golem = {
     "name": "Голем",
-    "img": "abobus.png",
-    "hp": 100,
+    "img": "Golem/walk-left/1.png",
+    "hp": 150,
     "armor": 0,
     "protection": 1,
-    "speed": 1.2,
+    "speed": 0.5,
     "attack_cooldown": 2,
     "damage": 3,
     "attack_distance": 600,

@@ -36,8 +36,9 @@ class BaseHero(BaseGameObject):
         self.add_animation('right', anim_folder + '/right')
         self.add_animation('down', anim_folder + '/down')
 
-    def key_input(self):
-        keystates = pygame.key.get_pressed()
+    def key_input(self, keystates=None):
+        if not keystates and not multiplayer_game:
+            keystates = pygame.key.get_pressed()
         self.velocity.x = self.velocity.y = 0
         if keystates[pygame.K_a]:
             self.velocity.x += -1
@@ -49,13 +50,6 @@ class BaseHero(BaseGameObject):
             self.velocity.y += 1
         if not self.velocity.is_normalized() and self.velocity.length() != 0:
             self.velocity.normalize_ip()
-
-        if pygame.mouse.get_pressed()[0]:
-            self.running = False
-            self.attack(*pygame.mouse.get_pos())
-
-        if pygame.mouse.get_pressed()[1]:
-            print(self.global_x, self.global_y)
 
         if self.velocity.length() == 0:
             self.stop_animation()
@@ -134,7 +128,7 @@ class BaseHero(BaseGameObject):
             elif from_poison:
                 SquareParticle.create_particles(self.global_x + self.rect.w // 2, self.global_y + self.rect.h // 2,
                                                 pygame.Color((73, 187, 34)), count_of_particles)
-            elif self.armor <= 0:
+            elif self.armor <= 0 or from_vampirism:
                 SquareParticle.create_particles(self.global_x + self.rect.w // 2, self.global_y + self.rect.h // 2,
                                                 pygame.Color("red"), count_of_particles)
             else:
@@ -188,6 +182,7 @@ class SpearMan(BaseHero):
         self.spear_dx, self.spear_dy = 30, 5
 
     def attack(self, x, y):
+        self.running = False
         if self.gun:
             self.gun.shot()
             self.gun = None

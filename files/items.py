@@ -12,6 +12,8 @@ def get_random_item():
     else:
         return choice(rare_items)
 
+def get_random_epic_item():
+    return choice(epic_items)
 
 class BaseItem(BaseGameObject):
     def __init__(self, x, y, img):  # drop - предмет выпадает или нет
@@ -91,11 +93,11 @@ class ElectricRing(BaseItem):
         self.can_attack = False
         self.parent = None
         self.dx = self.dy = 0
-        super().__init__(x, y, "Garlic.png")
+        super().__init__(x, y, "PlasmLamp.png")
 
     def give_effect(self, obj):
         self.parent = obj
-        self.image = pygame.image.load("files/img/GarlicCircle.png")
+        self.image = pygame.image.load("files/img/Electrofield.png")
         self.rect = self.image.get_rect()
         self.hitbox.rect = self.image.get_rect()
         self.hitbox.mask = pygame.mask.from_surface(self.image)
@@ -118,7 +120,7 @@ class ElectricRing(BaseItem):
                 for i in collided:
                     if hasattr(i.parent, "hp"):  # Need live sushestvo
                         if pygame.sprite.collide_mask(self.hitbox, i):
-                            i.parent.take_damage(0.2)
+                            i.parent.take_damage(1)
         else:
             super().update()
         self.rect.x, self.rect.y = [int(i) for i in from_global_to_local_pos(self.global_x, self.global_y)]
@@ -216,6 +218,6 @@ class TwinMirror(BaseItem):
                 Timer(10, self.change_status, [1]).start()
 
 
-ordinary_items = [Plaster, SteelPlaster, Steroids, EnergyDrink, PocketWatch, AppleBag]
+ordinary_items = [Plaster, SteelPlaster, Steroids, EnergyDrink, PocketWatch, AppleBag, ElectricRing]
 rare_items = [LHead, Candle, WeightingStone, CursedBlood]
 epic_items = [Cross, WeldingHelmet, TwinMirror]

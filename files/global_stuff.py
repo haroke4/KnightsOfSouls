@@ -31,8 +31,8 @@ def update_statistics(name_of_mob, cur):
 class LayeredUpdates(pygame.sprite.LayeredUpdates):
     def draw(self, surface: pygame.Surface):
         for sprite in self.sprites():
-            if not (sprite.rect.right < draw_area["l"] or sprite.rect.left > draw_area["r"] or
-                    sprite.rect.bottom < draw_area["t"] or sprite.rect.top > draw_area["b"]):
+            if not (sprite.rect.right < draw_area["l"] - 100 or sprite.rect.left > draw_area["r"] + 100 or
+                    sprite.rect.bottom < draw_area["t"] - 100 or sprite.rect.top > draw_area["b"] + 100):
                 try:
                     if type(sprite) == Hitbox:
                         rect = pygame.Rect(*from_global_to_local_pos(sprite.rect.x, sprite.rect.y), sprite.rect.w, sprite.rect.h)
@@ -45,7 +45,7 @@ class LayeredUpdates(pygame.sprite.LayeredUpdates):
 
 class Hitbox(pygame.sprite.Sprite):
     def __init__(self, dx, dy, width, height, parent, can_slide):
-        super().__init__(hitbox_group, all_sprites)  # add second argument "all_sprites" to show image of hitbox
+        super().__init__(hitbox_group)  # add second argument "all_sprites" to show image of hitbox
         self.rect = pygame.Rect(0, 0, width, height)
         self.image = pygame.Surface((width, height))
         self.dx, self.dy = dx, dy
@@ -80,7 +80,8 @@ class Camera:
 
 class BaseGameObject(pygame.sprite.Sprite):
     def __init__(self, x, y, img, hitbox=None, team=None, can_slide=True):  # hitbox = [dx, dy, width, height]
-
+        self.str_image = img
+        self.__animation_path = None
         self.initial_image = self.image = pygame.image.load(f"files/img/{img}").convert_alpha()
         self.avg_color = pygame.transform.average_color(self.image)
         self.rect = self.image.get_rect()
@@ -116,6 +117,7 @@ class BaseGameObject(pygame.sprite.Sprite):
              path - Spearman/up
         """
         self.__animations[name] = []
+        self.__animation_path = path.split('/')[0]
         counter = 1
         while True:
             try:
@@ -144,6 +146,7 @@ class BaseGameObject(pygame.sprite.Sprite):
     def stop_animation(self):
         """Stops the current animation"""
         if self.__current_animation:
+            self.str_image = f'{self.__animation_path}/{self.__current_animation}/{1}.png'
             self.image = self.__animations[self.__current_animation][0]
             self.__animation_queue.pop(0)
             if len(self.__animation_queue) == 0:
@@ -160,6 +163,8 @@ class BaseGameObject(pygame.sprite.Sprite):
             self.__animation_counter = 0
             if self.__current_animation_once or len(self.__animation_queue) >= 2:
                 self.stop_animation()
+        if self.__current_animation:
+            self.str_image = f'{self.__animation_path}/{self.__current_animation}/{self.__animation_counter + 1}.png'
 
     def get_current_animation(self):
         return self.__current_animation
@@ -177,6 +182,8 @@ class BaseGameObject(pygame.sprite.Sprite):
 ctypes.windll.user32.SetProcessDPIAware()
 true_res = (ctypes.windll.user32.GetSystemMetrics(0), ctypes.windll.user32.GetSystemMetrics(1))
 
+multiplayer_game = False
+multiplayer_obj_id = 0
 HITBOX_ARROW = 1
 HITBOX_FULL_RECT = 2
 PLAYER_TEAM = "player"
@@ -195,6 +202,7 @@ draw_area = {"l": 0, "t": 0, "r": WIDTH, "b": HEIGHT}  # left top right bottom
 take_damage = []  # for multiplayer
 
 CAMERA = Camera()
+
 
 # Statistics stuff below
 temp_stats = {
