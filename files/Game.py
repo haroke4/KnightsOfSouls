@@ -1,5 +1,6 @@
 import time
 import random
+import sqlite3
 from threading import Thread
 
 import pygame.font
@@ -8,11 +9,9 @@ from files.ui import Bar, TextBanner
 from files.heroes import SwordMan, SpearMan, MagicMan
 from files.enemies import *
 from files.environment_classes import Wall, Floor
-from files.items import get_random_item, get_random_epic_item
+from files.items import get_random_item, get_random_epic_item, TwinMirror
 from files.global_stuff import *
 from files.units_characteristics import increase_mob_characteristics
-
-from files.items import EnergyDrink  # для спидрана
 
 # pygame stuff below
 print(WIDTH, HEIGHT)
@@ -24,18 +23,15 @@ clock = pygame.time.Clock()
 font = pygame.font.Font(None, 25)
 font_splash_boot = pygame.font.SysFont('rockwell', 100)
 PLAY_ANIMATION = pygame.USEREVENT + 1
-UPDATE_ALL_STUFF = pygame.USEREVENT + 2
 
 pygame.event.set_allowed([pygame.QUIT, pygame.KEYDOWN, pygame.KEYUP, PLAY_ANIMATION])
-pygame.time.set_timer(UPDATE_ALL_STUFF, 20)
 pygame.time.set_timer(PLAY_ANIMATION, 100)
 
 
 class Game:
     player_start_pos = [(128, 448), (128, 576), (320, 576), (320, 448)]
 
-    def __init__(self):
-        self.level_just_finished = False
+    def __init__(self, chosen_hero):
 
         self.left_walls = []
         self.right_walls = []
@@ -43,6 +39,8 @@ class Game:
         self.current_level_mobs = []
         self.items_on_maps = []
 
+        self.running = False
+        self.level_just_finished = False
         self.playing = True
         self.current_level = 0
         self.last_level = False
@@ -55,9 +53,8 @@ class Game:
         self.transition_counter = 255
 
         self.generate_levels()
-
-        # self.player = SpearMan(*self.player_start_pos[0])
-        self.player = random.choice([SpearMan, MagicMan, SwordMan])(*self.player_start_pos[0])
+        self.player = chosen_hero(*self.player_start_pos[0])
+        TwinMirror(300, 600)
 
         # ui stuff
         self.bar_group = pygame.sprite.Group()
@@ -66,7 +63,18 @@ class Game:
         self.armor_bar = Bar(50, HEIGHT - 110, pygame.Color('grey'), self.player, "armor", "max_armor", screen,
                              self.bar_group)
 
-        self.run()
+    def quit_this_window(self):
+        change_draw_area(0, 0, WIDTH, HEIGHT)
+        particle_group.empty()
+        hitbox_group.empty()
+        all_sprites.empty()
+        con = sqlite3.connect("files/db.sqlite")
+        cur = con.cursor()
+        for i in temp_stats:
+            update_statistics(i, cur)
+        con.commit()
+        con.close()
+        self.running = False
 
     def generate_levels(self):
         # creating START room!
@@ -122,13 +130,7 @@ class Game:
         self.render_text = f"YOU DIED"
         self.transitioning = [self.fade_in, self.render_center_text]
         self.playing = False
-        con = sqlite3.connect("Statistics.sqlite")
-        cur = con.cursor()
-        print(temp_stats)
-        for i in temp_stats:
-            update_statistics(i, cur)
-        con.commit()
-        con.close()
+        Timer(3, self.quit_this_window).start()
 
     def next_floor(self):
         self.level_just_finished = False
@@ -160,14 +162,12 @@ class Game:
         self.render_text = f"FLOOR " + str(self.floor)
         self.transitioning = [self.fade_out, self.render_center_text]
         self.playing = True
-        con = sqlite3.connect("statistics.sqlite")
+        con = sqlite3.connect("files/db.sqlite")
         cur = con.cursor()
         for i in temp_stats:
             update_statistics(i, cur)
         con.commit()
         con.close()
-
-        print('aboba')
 
     def level_finished(self):
         print("LEVEL FINISHED")
@@ -185,7 +185,6 @@ class Game:
 
         if self.current_level == 5:
             self.last_level = True
-            print('LAST')
             self.items_on_maps.append(get_random_epic_item()(1472 * (self.current_level - 0.5) + self.dx, 512))
         else:
             self.items_on_maps.append(get_random_item()(1472 * (self.current_level - 0.5) + self.dx, 512))
@@ -198,13 +197,13 @@ class Game:
         self.left_walls[0][1].die()
         del self.left_walls[0]
         self.left_walls.append(Wall(1472 * (self.current_level - 1) + self.dx, 0, "Environment/LeftWall0.png"))
-        for i in range(self.current_level + 1):
+        for i in range(self.current_level + self.floor):
             temp = random.choice([MiniGolem, Snake, Tree, Dog, IceSoul, FireSoul])
             self.current_level_mobs.append(
                 temp(random.randrange(1472 * (self.current_level - 1) + TILE_WIDTH + self.dx,
-                                        1472 * (self.current_level - 1) + 1000 + self.dx),
-                       random.randrange(TILE_HEIGHT, 1024 - TILE_HEIGHT * 3),
-                       [self.player])
+                                      1472 * (self.current_level - 1) + 1000 + self.dx),
+                     random.randrange(TILE_HEIGHT * 2, 1024 - TILE_HEIGHT * 3),
+                     [self.player])
             )
 
     def start_boss_fighting(self):
@@ -217,49 +216,29 @@ class Game:
         del self.left_walls[0]
         self.left_walls.append(Wall(1472 * (self.current_level - 1) + self.dx, 0, "Environment/LeftWall0.png"))
 
-        """there is no cause there is no BOSSES !"""
-        self.current_level_mobs.append(
-            DragonBoss(random.randrange(1472 * (self.current_level - 1) + TILE_WIDTH + self.dx,
-                                        1472 * (self.current_level - 1) + 1000 + self.dx),
-                       random.randrange(TILE_HEIGHT, 1024 - TILE_HEIGHT * 3),
-                       [self.player]))
+        temp = random.choice([NecroBoss, Golem, DragonBoss, Hunter])(1472 * (self.current_level - 0.5) + self.dx, 512,
+                                                                     [self.player])
+        self.current_level_mobs.append(temp)
         Bar(WIDTH // 2, 120, pygame.Color("red"), self.current_level_mobs[0], "hp",
-            "max_hp", screen, self.bar_group, text="BOSS HP", c=True)
+            "max_hp", screen, self.bar_group, text=f"{temp.name} HP", c=True)
 
     def run(self):
         self.level_just_finished = True
-        running = True
+        self.running = True
         paused = False
         background_color = (34, 32, 53)
-        while running:
+        while self.running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    for i in all_sprites:
-                        i.kill()
-                        if i.hitbox:
-                            i.hitbox.kill()
-                    self.player.kill()
-                    running = False
+                    self.quit_this_window()
+                    self.running = False
 
                 elif event.type == PLAY_ANIMATION:
                     for _obj in play_animation_group:
                         _obj.change_image()
 
                 elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_q:
-                        for i in all_sprites:
-                            i.kill()
-                            if i.hitbox:
-                                i.hitbox.kill()
-                        con = sqlite3.connect("Statistics.sqlite")
-                        cur = con.cursor()
-                        for i in temp_stats:
-                            update_statistics(i, cur)
-                        con.commit()
-                        con.close()
-                        running = False
-
-                    elif event.key == pygame.K_ESCAPE:
+                    if event.key == pygame.K_ESCAPE:
                         paused = False if paused else True
 
                     elif event.key == pygame.K_LSHIFT:
@@ -271,6 +250,7 @@ class Game:
                 elif event.type == pygame.KEYUP:
                     if event.key == pygame.K_LSHIFT:
                         self.player.running = False
+
             if paused:
                 screen.blit(font.render(f" GAME PAUSED", True, pygame.Color("white")), (WIDTH // 2, HEIGHT // 2))
 
@@ -286,7 +266,7 @@ class Game:
                         if self.current_level == 5:
                             self.start_boss_fighting()
                         elif self.current_level != 6:
-                            self.start_wave()
+                            self.start_boss_fighting()
                         else:
                             Thread(target=self.next_floor, daemon=True).start()
                 elif 0 < self.current_level and len(self.current_level_mobs) == 0 and not self.last_level:
@@ -306,9 +286,6 @@ class Game:
                 screen.fill(background_color)
                 all_sprites.draw(screen)
                 particle_group.draw(screen)
-                self.bar_group.update()
-                self.banners_group.update()
-
                 if self.player.has_welding_helmet:  # это все для ПРЕДМЕТА сварочный шлем
                     pygame.draw.rect(screen, pygame.Color("black"), [0, 0, draw_area['l'], HEIGHT])
                     pygame.draw.rect(screen, pygame.Color("black"), [draw_area['r'], 0, WIDTH - draw_area['r'], HEIGHT])
@@ -317,14 +294,16 @@ class Game:
                     pygame.draw.rect(screen, pygame.Color("black"),
                                      [draw_area['l'], draw_area['b'], draw_area['r'] - draw_area['l'],
                                       draw_area['b'] - draw_area['t']])
-
                 screen.blit(font.render(f" HP: {self.player.hp}", True, pygame.Color("white")), (50, 20))
                 screen.blit(font.render(f" Current lvl: {self.current_level}", True, pygame.Color("white")),
                             (50, 40))
                 screen.blit(font.render(f"FPS: {clock.get_fps()}", True, pygame.Color("white")), (50, 60))
-                screen.blit(font.render(f" ARMOR: {self.player.armor}", True, pygame.Color("white")), (50, 80))
+                screen.blit(
+                    font.render(f" ARMOR: {self.player.armor} DMG: {self.player.damage}", True, pygame.Color("white")),
+                    (50, 80))
                 screen.blit(font.render(f" prt: {self.player.protection}", True, pygame.Color("white")),
                             (50, 100))
+                self.bar_group.update()
                 if self.current_level_mobs:
                     screen.blit(
                         font.render(f" prt: {self.current_level_mobs[0].distance}", True, pygame.Color("white")),
@@ -345,8 +324,7 @@ class Game:
             clock.tick(FPS)
 
 
-def run():
+def run(chosen_hero):
     global game_instance
-    game_instance = Game()
-
-
+    game_instance = Game(chosen_hero)
+    game_instance.run()

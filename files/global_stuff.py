@@ -2,7 +2,6 @@
 Глобальные нужные вещи (камера, константы, переменные)
 """
 import pygame
-import sqlite3
 import ctypes
 
 
@@ -35,7 +34,8 @@ class LayeredUpdates(pygame.sprite.LayeredUpdates):
                     sprite.rect.bottom < draw_area["t"] - 100 or sprite.rect.top > draw_area["b"] + 100):
                 try:
                     if type(sprite) == Hitbox:
-                        rect = pygame.Rect(*from_global_to_local_pos(sprite.rect.x, sprite.rect.y), sprite.rect.w, sprite.rect.h)
+                        rect = pygame.Rect(*from_global_to_local_pos(sprite.rect.x, sprite.rect.y), sprite.rect.w,
+                                           sprite.rect.h)
                     else:
                         rect = sprite.rect
                     surface.blit(sprite.image, rect)
@@ -157,14 +157,17 @@ class BaseGameObject(pygame.sprite.Sprite):
                 self.image = self.__animations[self.__current_animation][0]
 
     def change_image(self):
-        self.image = self.__animations[self.__current_animation][self.__animation_counter]
-        self.__animation_counter += 1
-        if self.__animation_counter >= len(self.__animations[self.__current_animation]):
-            self.__animation_counter = 0
-            if self.__current_animation_once or len(self.__animation_queue) >= 2:
-                self.stop_animation()
-        if self.__current_animation:
-            self.str_image = f'{self.__animation_path}/{self.__current_animation}/{self.__animation_counter + 1}.png'
+        try:
+            self.image = self.__animations[self.__current_animation][self.__animation_counter]
+            self.__animation_counter += 1
+            if self.__animation_counter >= len(self.__animations[self.__current_animation]):
+                self.__animation_counter = 0
+                if self.__current_animation_once or len(self.__animation_queue) >= 2:
+                    self.stop_animation()
+            if self.__current_animation:
+                self.str_image = f'{self.__animation_path}/{self.__current_animation}/{self.__animation_counter + 1}.png'
+        except IndexError:
+            pass
 
     def get_current_animation(self):
         return self.__current_animation
@@ -202,7 +205,6 @@ draw_area = {"l": 0, "t": 0, "r": WIDTH, "b": HEIGHT}  # left top right bottom
 take_damage = []  # for multiplayer
 
 CAMERA = Camera()
-
 
 # Statistics stuff below
 temp_stats = {

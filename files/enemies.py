@@ -37,7 +37,6 @@ class BaseEnemy(BaseGameObject):
     def take_damage(self, damage, from_candle=False, count_of_particles=10):
         if not self.invulnerability:
             damage = damage - self.protection
-            print(f'{self.__class__.__name__} : {damage}')  # ДЛЯ ДЕБАГГИНГА
             if damage > 0:
                 self.armor -= damage
                 if self.armor < 0:
@@ -53,6 +52,9 @@ class BaseEnemy(BaseGameObject):
                 else:
                     SquareParticle.create_particles(self.hitbox.rect.centerx, self.hitbox.rect.centery,
                                                     self.blood_color, count_of_particles)
+        else:
+            SquareParticle.create_particles(self.hitbox.rect.centerx, self.hitbox.rect.centery,
+                                            (255, 255, 255, 200), count_of_particles)
 
     def look_at_player(self):
         """Меняет вектор self.vector и измеряет растояние """
@@ -136,7 +138,7 @@ class Snake(BaseEnemy):
     def __init__(self, x, y, pl):
         data = units_characteristics.snake
         super().__init__(x, y, data["img"], data["hp"], data["armor"], data["protection"], data["speed"],
-                         data["attack_cooldown"], data["damage"], data["attack_distance"], pl, hitbox=HITBOX_FULL_RECT)
+                         data["attack_cooldown"], data["damage"], data["attack_distance"], pl, hitbox=[0, 0, 145, 45])
         self.add_animation('walk-left', 'Snake/Walk-left')
         self.add_animation('walk-right', 'Snake/Walk-right')
 
@@ -543,7 +545,7 @@ class DragonBoss(BaseEnemy):
                          hitbox=[64, 117, 180 - 64, 165 - 117])
         self.old_speed = self.speed
         self.attack_cooldown_func()
-
+        self.name = data["name"]
         self.add_animation("Fire-attack-left", "Dragon/Fire-attack-left")
         self.add_animation("Fire-attack-right", "Dragon/Fire-attack-right")
         self.add_animation("Fly-left", "Dragon/Fly-left")
@@ -657,13 +659,13 @@ class Fire(BaseGameObject):
 class NecroBoss(BaseEnemy):
     def __init__(self, x, y, pl):
         data = units_characteristics.necroboss
-        self.enemyes = [MiniGolem, Snake, Tree, Dog, IceSoul, FireSoul, ]
+        self.enemyes = [MiniGolem, Snake, Tree, Dog, IceSoul, FireSoul]
         self.minions = []
         self.can_ult = False
         super().__init__(x, y, data["img"], data["hp"], data["armor"], data["protection"], data["speed"],
                          data["attack_cooldown"], data["damage"], data["attack_distance"], pl, hitbox=[30, 60, 40, 40])
         self.new_rock_timer = None
-
+        self.name = data["name"]
         self.add_animation('walk-left', 'Necromancer/walk-left')
         self.add_animation('walk-right', 'Necromancer/walk-right')
         Timer(2, self.allow_ult).start()
@@ -679,10 +681,13 @@ class NecroBoss(BaseEnemy):
         if len(self.minions) < 3:
             count = 3 - len(self.minions)
             for i in random.sample(self.enemyes, count):
-                self.minions.append(i(self.global_x, self.global_y, self.players))
-            print(self.minions)
+                x = self.global_x + self.rect.w // 2 + (50 + random.randint(0, 50)) * (1 if self.vector.x > 0 else -1)
+                y = self.global_y + self.rect.h // 2 + (50 + random.randint(0, 50)) * (1 if self.vector.y > 0 else -1)
+                self.minions.append(i(x, y, self.players))
             self.can_ult = False
-            Timer(5, self.allow_ult).start()
+            t = Timer(20, self.allow_ult)
+            t.daemon = True
+            t.start()
 
     def allow_ult(self):
         self.can_ult = True
@@ -704,7 +709,8 @@ class NecroBoss(BaseEnemy):
             anim = 'walk'
             self.move_to_player()
         # NEED add animation to necromant
-        self.play_animation(f'walk-{self.player_side}')
+        if anim == 'walk':
+            self.play_animation(f'walk-{self.player_side}')
 
         all_sprites.change_layer(self, self.global_y + self.rect.h)
         super().update()
@@ -748,8 +754,8 @@ class Hunter(BaseEnemy):
         self.dogs = []
         super().__init__(x, y, data["img"], data["hp"], data["armor"], data["protection"], data["speed"],
                          data["attack_cooldown"], data["damage"], data["attack_distance"], pl,
-                         hitbox=[94, 53, 110 - 94, 94 - 53])
-
+                         hitbox=[94, 53, 110 - 94, 100 - 53])
+        self.name = data["name"]
         self.add_animation('walk-left', 'hunter/walk-left')
         self.add_animation('walk-right', 'hunter/walk-right')
         self.add_animation('attack-left', 'hunter/attack-left')
@@ -829,6 +835,7 @@ class HunterAttack(BaseGameObject):
 
 class Golem(BaseEnemy):
     def __init__(self, x, y, pl):
+
         self.attacking = None
         data = units_characteristics.golem
         self.ult_count = 1
@@ -836,36 +843,36 @@ class Golem(BaseEnemy):
         self.need_check = False
         super().__init__(x, y, data["img"], data["hp"], data["armor"], data["protection"], data["speed"],
                          data["attack_cooldown"], data["damage"], data["attack_distance"], pl,
-                         hitbox=[68, 133, 143 - 68, 193 - 133])
-
+                         hitbox=[68, 80, 143 - 68, 193 - 80])
+        self.name = data["name"]
         self.add_animation('walk-left', 'Golem/walk-left')
         self.add_animation('walk-right', 'Golem/walk-right')
         self.add_animation('attack-left', 'Golem/attack-left')
         self.add_animation('attack-right', 'Golem/attack-right')
-        self.add_animation('summon-left', 'Golem/summon-left')
-        self.add_animation('summon-right', 'Golem/summon-right')
+        self.add_animation('ult-right', 'Golem/Ult-right')
+        self.add_animation('ult-left', 'Golem/Ult-left')
 
     def ult(self):
         self.invulnerability = True
-        self.need_check = True
         self.ult_count -= 1
-        Timer(2, self.spawn_mini_golem).start()
-        Timer(7, self.spawn_mini_golem).start()
-        Timer(12, self.spawn_mini_golem).start()
+        self.spawn_mini_golem()
+        for i in [1, 2, 3]:
+            t = Timer(i, self.spawn_mini_golem)
+            t.daemon = True
+            t.start()
+        t = Timer(2, self.enable_need_check)
+        t.daemon = True
+        t.start()
+
+    def enable_need_check(self):
+        self.need_check = True
 
     def spawn_mini_golem(self):
-        mg = MiniGolem(self.global_x, self.global_y, self.player)
+        mg = MiniGolem(self.global_x, self.global_y, self.players)
         self.enemyes.append(mg)
 
     def stop_ult(self):
         self.invulnerability = False
-        self.need_check = False
-
-    def allow_ult(self):
-        self.can_ult = True
-
-    def start_check(self):
-        self.need_check = True
 
     def check_enemyes(self):
         i = 0
@@ -875,27 +882,26 @@ class Golem(BaseEnemy):
                 i -= 1
             i += 1
         if len(self.enemyes) == 0:
+            print('STOPPING ULT')
             self.stop_ult()
-        self.need_check = False
 
     def m_attack(self):
         self.player.take_damage(self.damage)
         self.attack_cooldown_func()
 
     def attack(self):
-        self.attacking = False
-        GolemAttack(self.hitbox.rect.centerx, self.hitbox.rect.centery, self.vector)
-        self.attack_cooldown_func()
+        if self.alive():
+            self.attacking = False
+            GolemAttack(self.hitbox.rect.centerx, self.hitbox.rect.centery, self.vector)
+            self.attack_cooldown_func()
 
     def update(self):
         if self.ult_count == 1 and self.hp <= self.max_hp // 2:
             self.ult()
         if self.invulnerability:
-            anim = 'ult'
+            anim = "ult"
             if self.need_check:
-                Timer(3, self.check_enemyes).start()
-                Timer(4, self.start_check).start()
-                self.need_check = False
+                self.check_enemyes()
         else:
             self.look_at_player()
             if self.distance <= self.attack_range:
@@ -918,7 +924,7 @@ class Golem(BaseEnemy):
         elif anim == 'attack':
             self.play_animation(f'attack-{self.player_side}', once=True, play_now=True)
         elif anim == 'ult':
-            self.play_animation(f'summon-{self.player_side}', once=True, play_now=True)
+            self.play_animation(f'ult-{self.player_side}', play_now=True)
 
         all_sprites.change_layer(self, self.global_y + self.rect.h)
         super().update()
@@ -926,10 +932,11 @@ class Golem(BaseEnemy):
 
 class GolemAttack(BaseGameObject):
     def __init__(self, x, y, vector):
-
-        self.speed = 10
+        self.speed = 15
         self.damage = units_characteristics.hunter["damage"]
         super().__init__(x, y, 'BigRockBall.png', HITBOX_FULL_RECT, ENEMY_TEAM, False)
+        self.global_x -= self.rect.w // 2
+        self.global_y -= self.rect.h // 2
         self.vector = vector
 
     def update(self):

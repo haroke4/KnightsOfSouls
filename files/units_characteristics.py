@@ -11,12 +11,17 @@ def increase_mob_characteristics(x):
         i["protection"] = x * i["protection"]
 
 
+def make_default_mob_characteristics():
+    pass
+    # TODO: сделать нормальную систему
+
+
 # HEROES
 spearman = {
     "name": "Копейщик",
     "img": "SpearMan/down/1.png",
     "gun_img": "arrow.png",
-    "hp": 6,
+    "hp": 5,
     "armor": 5,
     "protection": 0,
     "walk_speed": 1.25,
@@ -33,10 +38,10 @@ magicman = {
     "armor": 7,
     "protection": 0,
     "walk_speed": 1.0,
-    "run_speed": 1.75,
+    "run_speed": 2.0,
     "attack_cooldown": 2,
-    "damage": 5,
-    "description": "Создает ледяные шипы  из земли, враги замедляются при попаданий",
+    "damage": 7,
+    "description": "Создает ледяную токсину из земли, враги замедляются при попаданий",
     "attack_range": 500
 }
 swordman = {
@@ -49,7 +54,7 @@ swordman = {
     "walk_speed": 1.0,
     "run_speed": 2.0,
     "attack_cooldown": 0.5,
-    "damage": 5,
+    "damage": 8,
     "description": "Мастер ближнего боя - в совершенстве владеет рапирой, которой наносит проникающие удары. Носит "
                    "свою тренировочную броню, из-за чего получает на 1 меньше урона из любого источника. "
 }
@@ -64,15 +69,15 @@ snake = {
     "speed": 3,
     "attack_cooldown": 2,
     "damage": 1,
-    "attack_distance": 50,
+    "attack_distance": 90,
 }
 
 mini_golem = {
     "name": "Мини-голем",
     "img": "Mini-golem/walk-left/1.png",
     "gun_img": "RockBall.png",
-    "hp": 40,
-    "armor": 6,
+    "hp": 12,
+    "armor": 0,
     "protection": 0,
     "speed": 0.8,
     "attack_cooldown": 2,
@@ -84,8 +89,8 @@ ice_soul = {
     "name": "Ледяной дух",
     "img": "Ice spirit/walk-left/1.png",
     "gun_img": "Ice.png",
-    "hp": 20,
-    "armor": 6,
+    "hp": 10,
+    "armor": 0,
     "protection": 0,
     "speed": 1.2,
     "attack_cooldown": 2,
@@ -97,8 +102,8 @@ fire_soul = {
     "name": "Огненный дух",
     "img": "Fire spirit/walk/1.png",
     "gun_img": "FireBall.png",
-    "hp": 20,
-    "armor": 6,
+    "hp": 10,
+    "armor": 0,
     "protection": 0,
     "speed": 1.2,
     "attack_cooldown": 2,
@@ -109,7 +114,7 @@ fire_soul = {
 dog = {
     "name": "Пёс",
     "img": "Dog/walk-left/1.png",
-    "hp": 20,
+    "hp": 15,
     "armor": 0,
     "protection": 0,
     "speed": 2.5,
@@ -121,8 +126,8 @@ dog = {
 tree = {
     "name": "Ёлка",
     "img": "Tree/StandUp/1.png",
-    "hp": 10,
-    "armor": 5,
+    "hp": 15,
+    "armor": 0,
     "protection": 0,
     "speed": 1.5,
     "damage": 1,
@@ -132,7 +137,7 @@ tree = {
 
 # BOSSES
 dragonboss = {
-    "name": "Древний Дракон",
+    "name": "Dragon",
     "img": "Dragon/Walk-right/1.png",
     "hp": 150,
     "armor": 0,
@@ -146,7 +151,7 @@ dragonboss = {
 }
 
 necroboss = {
-    "name": "Некромант",
+    "name": "Necromancer",
     "img": "Necromancer/Walk-left/1.png",
     "hp": 100,
     "armor": 0,
@@ -158,7 +163,7 @@ necroboss = {
 }
 
 hunter = {
-    "name": "Охотник",
+    "name": "Hunter",
     "img": "Hunter/walk-left/1.png",
     "hp": 80,
     "armor": 0,
@@ -170,7 +175,7 @@ hunter = {
 }
 
 golem = {
-    "name": "Голем",
+    "name": "Golem",
     "img": "Golem/walk-left/1.png",
     "hp": 150,
     "armor": 0,

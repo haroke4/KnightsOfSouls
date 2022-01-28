@@ -24,9 +24,11 @@ class BaseHero(BaseGameObject):
         self.damage_multiplier = 1
         self.candle_damage = 0  # для предмета "свеча"
         self.has_cross = False  # for item Cross
+        self.has_welding_helmet = False
+        self.has_mirror = False
+        self.has_electric_ring = False
         self.apple_bag_count = 0
         self.vampirism = 0  # FLOAT
-        self.has_welding_helmet = False
         self.slowing_down_effect_timer = None
         self.armor_heal_timer = None
 
@@ -98,7 +100,6 @@ class BaseHero(BaseGameObject):
             damage = damage * self.damage_multiplier - self.protection
         else:
             damage = damage * self.damage_multiplier
-        print(self.__class__.__name__, damage)
         if damage > 0:
             if from_poison or from_vampirism:
                 self.hp -= damage
@@ -187,11 +188,13 @@ class SpearMan(BaseHero):
             self.gun.shot()
             self.gun = None
             self.new_spear_timer = Timer(self.attack_cooldown, self.new_spear)
+            self.new_spear_timer.daemon = True
             self.new_spear_timer.start()
 
     def new_spear(self):
-        self.gun = Spear(self.global_x, self.global_y, self.team, self.damage, self)
-        self.look_at_mouse()
+        if self.alive():
+            self.gun = Spear(self.global_x, self.global_y, self.team, self.damage, self)
+            self.look_at_mouse()
 
     def look_at_mouse(self):
         if not self.gun.shooted:
@@ -209,7 +212,7 @@ class SpearMan(BaseHero):
             self.new_spear_timer.cancel()
         if self.gun:
             self.gun.die()
-        super(SpearMan, self).die()
+        super().die()
 
 
 class Spear(BaseGameObject):
@@ -229,14 +232,6 @@ class Spear(BaseGameObject):
         self.hitbox.mask = pygame.mask.from_surface(self.image)
         self.shooted = True
 
-    def look_at_mouse(self):
-        x, y = from_local_to_global_pos(*pygame.mouse.get_pos())
-        self.angle = pygame.Vector2(x - self.parent.global_x - self.rect.w // 2, y - self.parent.global_y
-                                    - self.rect.h // 2).normalize().angle_to(pygame.Vector2(1, 0))
-        if self.angle < 0:
-            self.angle += 360
-        self.image = pygame.transform.rotate(self.orig_image, self.angle)
-
     def update(self):
         all_sprites.change_layer(self, self.hitbox.rect.bottom)
         if self.shooted:
@@ -253,16 +248,14 @@ class Spear(BaseGameObject):
                             i.parent.take_damage(dmg)
 
                         if self.parent.candle_damage:
-                            Timer(1, i.parent.take_damage, [self.parent.candle_damage, True]).start()
-                            Timer(2, i.parent.take_damage, [self.parent.candle_damage, True]).start()
-                            Timer(3, i.parent.take_damage, [self.parent.candle_damage, True]).start()
-                            Timer(4, i.parent.take_damage, [self.parent.candle_damage, True]).start()
-                            Timer(5, i.parent.take_damage, [self.parent.candle_damage, True]).start()
+                            for g in [1, 2, 3, 4, 5]:
+                                t = Timer(g, i.parent.take_damage, [self.parent.candle_damage, True])
+                                t.daemon = True
+                                t.start()
                     else:
                         SquareParticle.create_particles(self.global_x, self.global_y,
                                                         i.parent.avg_color)
                     self.die()
-
         self.hitbox.set_pos(self.global_x, self.global_y)
         super().update()
 
@@ -369,14 +362,6 @@ class Sword(BaseGameObject):
         self.orig_image = self.image
         all_sprites.change_layer(self, 0)
 
-    def look_at_mouse(self):
-        x, y = from_local_to_global_pos(*pygame.mouse.get_pos())
-        self.angle = pygame.Vector2(x - self.parent.global_x - self.rect.w // 2, y - self.parent.global_y
-                                    - self.rect.h // 2).normalize().angle_to(pygame.Vector2(1, 0))
-        if self.angle < 0:
-            self.angle += 360
-        self.image = pygame.transform.rotate(self.orig_image, self.angle)
-
     def attack(self):
         self.vector = pygame.Vector2(1, 0).rotate(-self.angle).normalize()
         self.attacking = True
@@ -405,22 +390,5 @@ class Sword(BaseGameObject):
                                 Timer(4, i.parent.take_damage, [self.parent.candle_damage, True]).start()
                                 Timer(5, i.parent.take_damage, [self.parent.candle_damage, True]).start()
                         self.damage_taken.append(i)
-
-        else:
-            self.look_at_mouse()
-            self.set_pos(self.parent.global_x + 40 * math.cos(self.angle / 180 * math.pi) + 3,
-                         self.parent.global_y - 40 * math.sin(self.angle / 180 * math.pi) + 20)
         self.hitbox.set_pos(self.global_x, self.global_y)
         super().update()
-
-
-class Meshok(BaseHero):
-    def __init__(self, x, y):
-        data = units_characteristics.spearman
-        super().__init__(x, y, data["img"], data["hp"], data["armor"], data["protection"], data["walk_speed"],
-                         data["run_speed"], data["attack_cooldown"], data["damage"], 'SpearMan')
-        self.team = None
-        self.hitbox.team = None
-
-    def key_input(self):
-        pass

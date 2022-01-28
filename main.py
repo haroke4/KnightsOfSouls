@@ -1,71 +1,86 @@
 import pygame
 from files.global_stuff import WIDTH, HEIGHT
+from files.ui import Button
+from files.Game import run
+from files.heroes import SpearMan, MagicMan, SwordMan
 
 
-def pointInRect(point, rect):
-    x1, y1, w, h = rect
-    x2, y2 = x1 + w, y1 + h
-    x, y = point
-    if (x1 < x and x < x2):
-        if (y1 < y and y < y2):
-            return True
-    return False
+def start_game():
+    statistic_texts.clear()
+    run(current_hero)
 
 
-class Button(pygame.sprite.Sprite):
-    def __init__(self, x, y, img, sec_img=None):
-        super(Button, self).__init__(sprites)
-        self.image = pygame.image.load(img)
-        self.rect = self.image.get_rect()
-        self.rect.centerx = x
-        self.rect.centery = y
-        if sec_img:
-            self.sec_img = pygame.image.load(sec_img)
-        else:
-            self.sec_img = None
+def show_statistics():
+    if not statistic_texts:
+        import sqlite3
+        con = sqlite3.connect("files/db.sqlite")
+        data = [(0, "Mob:", "Kills:")] + con.execute("""SELECT *  from Info""").fetchall()
+        con.close()
+        y = HEIGHT // 2 + 50
+        x = WIDTH * 0.7
+        for i in data:
+            statistic_texts.append((font.render(i[1], True, (255, 255, 255)), x, y))
+            statistic_texts.append((font.render(str(i[2]), True, (255, 255, 255)), x + 130, y))
+            y += 30
+        print(data)
+    else:
+        statistic_texts.clear()
 
-    def change_image(self):
-        if self.sec_img:
-            self.image, self.sec_img = self.sec_img, self.image
+
+def change_character():
+    global current_hero, hero_img
+    print(current_hero)
+    if current_hero == SpearMan:
+        current_hero = MagicMan
+        hero_img = pygame.transform.scale(pygame.image.load('files/img/MagicMan/down/1.png'), (50 * 3, 60 * 3))
+    elif current_hero == MagicMan:
+        current_hero = SwordMan
+        hero_img = pygame.transform.scale(pygame.image.load('files/img/SwordMan/down/1.png'), (50 * 3, 60 * 3))
+    else:
+        current_hero = SpearMan
+        hero_img = pygame.transform.scale(pygame.image.load('files/img/SpearMan/down/1.png'), (50 * 3, 60 * 3))
+    hero_button.change_image(hero_img, hero_img)
+
+
+def print_hi():
+    print('hi')
 
 
 pygame.init()
-sprites = pygame.sprite.Group()
-start_pressed = False
-exit_pressed = False
-start_button = Button(WIDTH // 2, HEIGHT // 2, 'files/img/start.png', 'files/img/start_pressed.png')
-exit_button = Button(WIDTH // 2, HEIGHT // 2 + 150, 'files/img/exit.png', 'files/img/exit_pressed.png')
-statistic_button = Button(WIDTH // 2 - 200, HEIGHT // 2, 'files/img/statis.png')
+font = pygame.font.Font(None, 30)
+background = pygame.image.load("files/img/main_menu.png")
 screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN | pygame.DOUBLEBUF, 16)
+
+dy = 100
+sprites = pygame.sprite.Group()
+current_hero = SpearMan
+hero_img = pygame.transform.scale(pygame.image.load('files/img/SpearMan/down/1.png'), (50 * 3, 60 * 3))
+statistic_texts = []  # (rendered_text, x, y)
+
+hero_text = (font.render("YOUR HERO: ", True, pygame.Color("BLACK")), (WIDTH // 2) * 0.645, (HEIGHT // 2) * 0.87 + dy)
+hero_button = Button((WIDTH // 2) * 0.7, (HEIGHT // 2) * 1.1 + dy, sprites, hero_img, hero_img, change_character)
+start_button = Button(WIDTH // 2, HEIGHT // 2 + dy, sprites, 'start.png', 'start_pressed.png', start_game)
+exit_button = Button(WIDTH // 2, HEIGHT // 2 + 120 + dy, sprites, 'exit.png', 'exit_pressed.png', lambda x=0: exit())
+statistic_button = Button((WIDTH // 2) * 1.3, (HEIGHT // 2) * 1.1 + dy, sprites, 'statis.png', 'statis_pressed.png',
+                          show_statistics)
+
+
 playing = True
 while playing:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             playing = False
-        elif event.type == pygame.MOUSEBUTTONDOWN:
-            if pointInRect(event.pos, start_button.rect):
-                start_button.change_image()
-                start_pressed = True
-            elif pointInRect(event.pos, exit_button.rect):
-                exit_button.change_image()
-                exit_pressed = True
-            elif pointInRect(event.pos, statistic_button.rect):
-                pass
-        elif event.type == pygame.MOUSEBUTTONUP:
-            if pointInRect(event.pos, start_button.rect) and start_pressed:
-                from files.Game import run
-                run()
-            if pointInRect(event.pos, exit_button.rect) and exit_pressed:
-                exit()
-            if start_pressed:
-                start_pressed = False
-                start_button.change_image()
-            if exit_pressed:
-                exit_pressed = False
-                exit_button.change_image()
+
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_u:
                 playing = False
-    screen.fill((0, 0, 0))
+
+    sprites.update()
+    screen.blit(background, (0, 0))
     sprites.draw(screen)
+    screen.blit(hero_text[0], hero_text[1:])
+    for i in statistic_texts:
+        screen.blit(i[0], i[1:])
     pygame.display.flip()
+
+# TODO: Сделать кнопку about
