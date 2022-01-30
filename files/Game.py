@@ -28,6 +28,7 @@ pygame.event.set_allowed([pygame.QUIT, pygame.KEYDOWN, pygame.KEYUP, PLAY_ANIMAT
 pygame.time.set_timer(PLAY_ANIMATION, 100)
 pygame.display.set_caption("Knights of souls! V1.0")
 
+
 class Game:
     player_start_pos = [(128, 448), (128, 576), (320, 576), (320, 448)]
 
@@ -60,9 +61,8 @@ class Game:
         self.generate_levels()
         self.player = chosen_hero(*random.choice(self.player_start_pos))
         # ui stuff
-
-        self.hp_bar = Bar(50, 50, pygame.Color('red'), self.player, "hp", "max_hp", screen, self.bar_group)
-        self.armor_bar = Bar(50, 110, pygame.Color('grey'), self.player, "armor", "max_armor", screen,
+        self.hp_bar = Bar(50, HEIGHT - 170, pygame.Color('red'), self.player, "hp", "max_hp", screen, self.bar_group)
+        self.armor_bar = Bar(50, HEIGHT - 110, pygame.Color('grey'), self.player, "armor", "max_armor", screen,
                              self.bar_group)
         self.exit_button = False
 
