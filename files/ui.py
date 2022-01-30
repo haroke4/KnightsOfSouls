@@ -1,10 +1,6 @@
-import math
-
+import random
 import pygame
-from files.global_stuff import WIDTH, HEIGHT
 
-
-# TODO: Сделать отображение чего то чего взял
 
 class Button(pygame.sprite.Sprite):
     def __init__(self, x, y, sprite_group, img, sec_img, func, *args, **kwargs):
@@ -68,10 +64,11 @@ class Bar(pygame.sprite.Sprite):
         if c:
             self.rect.centerx = x
             self.rect.centery = y
+        self.init_cords = self.rect.x, self.rect.y
         self.color = color
         self.speed = 3
         self.text = text
-        self.font = pygame.font.SysFont("Arial", 25)
+        self.font = pygame.font.Font("files/font1.ttf", 25)
 
         self.target = target
         self.current_value = self.length
@@ -85,11 +82,14 @@ class Bar(pygame.sprite.Sprite):
         ratio = self.length / getattr(self.target, self.max_value_attr)
         target_value = getattr(self.target, self.value_attr) * ratio
         if target_value - 3 < self.current_value < target_value + 3:
-            pass
+            self.rect.x, self.rect.y = self.init_cords
         elif target_value > self.current_value:
+            self.rect.x, self.rect.y = self.init_cords
             self.current_value += self.speed
         elif target_value < self.current_value:
             self.current_value -= self.speed
+            self.rect.x = self.init_cords[0] - random.randint(-7, 7)
+            self.rect.y = self.init_cords[1] - random.randint(-7, 7)
 
         if self.text:
             t = self.font.render(self.text, True, pygame.Color("white"))
@@ -104,34 +104,3 @@ class Bar(pygame.sprite.Sprite):
             f'{round(getattr(self.target, self.value_attr), 1)} / {getattr(self.target, self.max_value_attr)}',
             True, pygame.Color("black"))
         self.screen.blit(t, (self.rect.centerx - t.get_rect().w // 2, self.rect.centery - t.get_rect().h // 2))
-
-
-class TextBanner(pygame.sprite.Sprite):
-    def __init__(self, text, screen, group):
-        self.text = text
-        self.screen = screen
-        super().__init__(group)
-        self.font = pygame.font.SysFont("Arial", 25)
-        cur = 0
-        cnt = 1
-        self.lines = {}
-        for i in text.split(' '):
-            cur += len(i)
-            if cur > 50:
-                cnt += 1
-                self.cur = 0
-            if cnt in self.lines.keys():
-                self.lines[cnt].append(i)
-            else:
-                self.lines[cnt] = [i]
-        self.texts = []
-        for i in self.lines.values():
-            self.texts.append(' '.join(i))
-
-    def update(self):
-        pygame.draw.rect(self.screen, pygame.Color("black"),
-                         [500, HEIGHT - len(self.texts) * 50 - 50, 26 * 50, 50 * len(self.texts)])
-        y = 50 * (len(self.lines) + 1)
-        for i in self.texts:
-            self.screen.blit(self.font.render(i, True, pygame.Color('white')), (500, HEIGHT - y))
-            y -= 50

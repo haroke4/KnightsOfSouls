@@ -166,8 +166,8 @@ class BaseGameObject(pygame.sprite.Sprite):
                     self.stop_animation()
             if self.__current_animation:
                 self.str_image = f'{self.__animation_path}/{self.__current_animation}/{self.__animation_counter + 1}.png'
-        except IndexError:
-            pass
+        except IndexError or KeyError as e:
+            print(e)
 
     def get_current_animation(self):
         return self.__current_animation
@@ -199,6 +199,7 @@ TILE_SIZE = TILE_WIDTH, TILE_HEIGHT = (64, 64)
 all_sprites = LayeredUpdates()
 particle_group = LayeredUpdates()
 hitbox_group = pygame.sprite.Group()
+items_text = pygame.sprite.Group()
 delete_later = []
 play_animation_group = []
 draw_area = {"l": 0, "t": 0, "r": WIDTH, "b": HEIGHT}  # left top right bottom

@@ -97,7 +97,7 @@ class BaseHero(BaseGameObject):
         if self.armor_heal_timer:
             self.armor_heal_timer.cancel()
         if not from_poison and not from_vampirism:
-            damage = damage * self.damage_multiplier - self.protection
+            damage = (damage - self.protection) * self.damage_multiplier
         else:
             damage = damage * self.damage_multiplier
         if damage > 0:
@@ -118,10 +118,11 @@ class BaseHero(BaseGameObject):
                     Timer(3, self.change_damage_multiplier, [1]).start()  # убираем бессмертие
                 else:
                     self.die()
-        if self.candle_damage and not from_candle:
-            # индикатор огня
+
+        if self.candle_damage and not from_candle and damage:
             Timer(1, self.take_damage, [self.candle_damage, True]).start()
             Timer(2, self.take_damage, [self.candle_damage, True]).start()
+
         if self.alive():
             if from_candle:
                 SquareParticle.create_particles(self.global_x + self.rect.w // 2, self.global_y + self.rect.h // 2,
@@ -173,6 +174,8 @@ class BaseHero(BaseGameObject):
 
 
 class SpearMan(BaseHero):
+    characteristic = "Throws spears like a master", "10% chance to deal triple damage"
+
     def __init__(self, x=0, y=0):
         data = units_characteristics.spearman
         super().__init__(x, y, data["img"], data["hp"], data["armor"], data["protection"], data["walk_speed"],
@@ -261,6 +264,8 @@ class Spear(BaseGameObject):
 
 
 class MagicMan(BaseHero):
+    characteristic = "Creates an ice toxin from the ground", "enemies slow down when hit"
+
     def __init__(self, x=0, y=0):
         data = units_characteristics.magicman
         self.can_shot = True
@@ -270,6 +275,7 @@ class MagicMan(BaseHero):
         super().update()
 
     def attack(self, x, y):
+        self.running = False
         if self.can_shot:
             x, y = from_local_to_global_pos(x, y)
             vector = pygame.Vector2(x - self.global_x, y - self.global_y)
@@ -312,6 +318,8 @@ class MagicManFire(BaseGameObject):
 
 
 class SwordMan(BaseHero):
+    characteristic = "Deals penetrating blows with a rapier", "Takes 1 less damage from any source", "thanks to his armor"
+
     def __init__(self, x=0, y=0):
         data = units_characteristics.swordman
         self.can_attack = True
@@ -325,6 +333,7 @@ class SwordMan(BaseHero):
         self.can_attack = True
 
     def attack(self, x, y):
+        self.running = False
         if self.can_attack:
             self.gun.attack()
             self.can_attack = False

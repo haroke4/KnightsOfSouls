@@ -5,13 +5,12 @@ from threading import Thread
 
 import pygame.font
 
-from files.ui import Bar, TextBanner
-from files.heroes import SwordMan, SpearMan, MagicMan
+from files.ui import Bar, Button
 from files.enemies import *
 from files.environment_classes import Wall, Floor
-from files.items import get_random_item, get_random_epic_item, TwinMirror
+from files.items import *
 from files.global_stuff import *
-from files.units_characteristics import increase_mob_characteristics
+from files.units_characteristics import increase_mob_characteristics, make_default_mob_characteristics
 
 # pygame stuff below
 print(WIDTH, HEIGHT)
@@ -20,7 +19,7 @@ pygame.mixer.init()
 game_instance = None
 screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN | pygame.DOUBLEBUF, 16)
 clock = pygame.time.Clock()
-font = pygame.font.Font(None, 25)
+font = pygame.font.Font("files/font1.ttf", 36)
 font_splash_boot = pygame.font.SysFont('rockwell', 100)
 PLAY_ANIMATION = pygame.USEREVENT + 1
 
@@ -38,10 +37,15 @@ class Game:
         self.other_environment = []
         self.current_level_mobs = []
         self.items_on_maps = []
+        self.bar_group = pygame.sprite.Group()
+        self.banners_group = pygame.sprite.Group()
+        self.buttons_group = pygame.sprite.Group()
 
         self.running = False
         self.level_just_finished = False
         self.playing = True
+        self.quitting = False
+        self.paused = False
         self.current_level = 0
         self.last_level = False
         self.floor = 1
@@ -53,15 +57,13 @@ class Game:
         self.transition_counter = 255
 
         self.generate_levels()
-        self.player = chosen_hero(*self.player_start_pos[0])
-        TwinMirror(300, 600)
-
+        self.player = chosen_hero(*random.choice(self.player_start_pos))
         # ui stuff
-        self.bar_group = pygame.sprite.Group()
-        self.banners_group = pygame.sprite.Group()
-        self.hp_bar = Bar(50, HEIGHT - 170, pygame.Color('red'), self.player, "hp", "max_hp", screen, self.bar_group)
-        self.armor_bar = Bar(50, HEIGHT - 110, pygame.Color('grey'), self.player, "armor", "max_armor", screen,
+
+        self.hp_bar = Bar(50, 50, pygame.Color('red'), self.player, "hp", "max_hp", screen, self.bar_group)
+        self.armor_bar = Bar(50, 110, pygame.Color('grey'), self.player, "armor", "max_armor", screen,
                              self.bar_group)
+        self.exit_button = False
 
     def quit_this_window(self):
         change_draw_area(0, 0, WIDTH, HEIGHT)
@@ -74,7 +76,52 @@ class Game:
             update_statistics(i, cur)
         con.commit()
         con.close()
+        make_default_mob_characteristics()
+        for i in temp_stats:
+            temp_stats[i] = 0
         self.running = False
+
+    def exit_button_pressed(self):
+        self.quitting = True
+        self.exit_button.kill()
+        self.render_text = ["Cleaning battlefield..."]
+        self.transitioning = [self.fade_in, self.render_center_text]
+        self.playing = False
+        Timer(3, self.quit_this_window).start()
+
+    def fade_in(self):
+        surface = pygame.Surface((WIDTH, HEIGHT)).convert_alpha()
+        surface.fill(pygame.Color(0, 0, 0, int(self.transition_counter)))
+        screen.blit(surface, (0, 0))
+        self.transition_counter += 2
+        if self.transition_counter >= 255:
+            self.transitioning = []
+
+    def fade_out(self):
+        surface = pygame.Surface((WIDTH, HEIGHT)).convert_alpha()
+        surface.fill(pygame.Color(0, 0, 0, int(self.transition_counter)))
+        screen.blit(surface, (0, 0))
+
+        self.transition_counter -= 1.5
+        if self.transition_counter <= 0:
+            self.transitioning = []
+
+    def render_center_text(self):
+        y = -60
+        for str_text in self.render_text:
+            text = font_splash_boot.render(str_text, True, (255, 255, 255))
+            text.set_alpha(self.transition_counter)
+            dx, dy = text.get_width() // 2, text.get_height() // 2
+            screen.blit(text, (WIDTH // 2 - dx, HEIGHT // 2 - dy + y))
+            y += 120
+
+    def on_player_die(self):
+        self.quitting = True
+        a = sum([g for i, g in temp_stats.items()])
+        self.render_text = ["YOU DIED", f'Enemies killed: {a}']
+        self.transitioning = [self.fade_in, self.render_center_text]
+        self.playing = False
+        Timer(5, self.quit_this_window).start()
 
     def generate_levels(self):
         # creating START room!
@@ -101,48 +148,21 @@ class Game:
         self.other_environment.append(Floor(self.dx + 1472 * 5, 256, "Environment/MiniRoom/Floor.png"))
 
         self.transitioning = [self.fade_out, self.render_center_text]
-        self.render_text = f"FLOOR " + str(self.floor)
-
-    def fade_in(self):
-        surface = pygame.Surface((WIDTH, HEIGHT)).convert_alpha()
-        surface.fill((0, 0, 0, self.transition_counter))
-        screen.blit(surface, (0, 0))
-        self.transition_counter += 2
-        if self.transition_counter >= 255:
-            self.transitioning = []
-
-    def fade_out(self):
-        surface = pygame.Surface((WIDTH, HEIGHT)).convert_alpha()
-        surface.fill((0, 0, 0, self.transition_counter))
-        screen.blit(surface, (0, 0))
-
-        self.transition_counter -= 1.5
-        if self.transition_counter <= 0:
-            self.transitioning = []
-
-    def render_center_text(self):
-        text = font_splash_boot.render(self.render_text, True, (255, 255, 255))
-        text.set_alpha(self.transition_counter)
-        dx, dy = text.get_width() // 2, text.get_height() // 2
-        screen.blit(text, (WIDTH // 2 - dx, HEIGHT // 2 - dy))
-
-    def on_player_die(self):
-        self.render_text = f"YOU DIED"
-        self.transitioning = [self.fade_in, self.render_center_text]
-        self.playing = False
-        Timer(3, self.quit_this_window).start()
+        self.render_text = [f"FLOOR {self.floor}", "Welcome to the dungeons"]
 
     def next_floor(self):
         self.level_just_finished = False
         self.playing = False
         self.transition_counter = 0
         self.transitioning = [self.fade_in]
-        while self.transitioning:
-            time.sleep(0.25)
         for i in self.items_on_maps:
-            i.die()
+            if not (isinstance(i, TwinMirror) or isinstance(i, ElectricRing)):
+                i.die()
         for i in self.right_walls + self.left_walls + self.other_environment:
-            i.die()
+            try:
+                i.die()
+            except Exception:
+                pass
 
         self.items_on_maps.clear()
         self.right_walls.clear()
@@ -152,14 +172,17 @@ class Game:
         self.generate_levels()
         self.player.set_pos(*self.player_start_pos[0])
 
-        increase_mob_characteristics(2)
         self.level_just_finished = True
         self.last_level = False
         self.current_level = 0
         self.floor += 1
+        increase_mob_characteristics(self.floor)
+        self.render_text = [f"FLOOR {self.floor}", "Mobs became more dangerous"]
+
+        while self.transitioning:
+            time.sleep(0.25)
 
         self.transition_counter = 255
-        self.render_text = f"FLOOR " + str(self.floor)
         self.transitioning = [self.fade_out, self.render_center_text]
         self.playing = True
         con = sqlite3.connect("files/db.sqlite")
@@ -216,22 +239,20 @@ class Game:
         del self.left_walls[0]
         self.left_walls.append(Wall(1472 * (self.current_level - 1) + self.dx, 0, "Environment/LeftWall0.png"))
 
-        temp = random.choice([NecroBoss, Golem, DragonBoss, Hunter])(1472 * (self.current_level - 0.5) + self.dx, 512,
-                                                                     [self.player])
+        temp = random.choice([DragonBoss, Golem, NecroBoss, Hunter])(1472 * (self.current_level - 0.5)
+                                                                     + self.dx, 512, [self.player])
         self.current_level_mobs.append(temp)
         Bar(WIDTH // 2, 120, pygame.Color("red"), self.current_level_mobs[0], "hp",
-            "max_hp", screen, self.bar_group, text=f"{temp.name} HP", c=True)
+            "max_hp", screen, self.bar_group, text=f"{temp.name} HP", c=True, len_=WIDTH * 0.8)
 
     def run(self):
         self.level_just_finished = True
         self.running = True
-        paused = False
         background_color = (34, 32, 53)
         while self.running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    self.quit_this_window()
-                    self.running = False
+                    exit()
 
                 elif event.type == PLAY_ANIMATION:
                     for _obj in play_animation_group:
@@ -239,20 +260,27 @@ class Game:
 
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
-                        paused = False if paused else True
+                        if self.quitting is True:
+                            continue
+                        self.paused = False if self.paused else True
+                        if self.paused:
+                            self.exit_button = Button(WIDTH // 2, HEIGHT // 2, self.buttons_group, "main_menu.png",
+                                                      "main_menu_pressed.png", self.exit_button_pressed)
+                        else:
+                            self.exit_button.kill()
 
                     elif event.key == pygame.K_LSHIFT:
                         self.player.running = True
 
-                    elif event.key == pygame.K_i:
-                        self.level_finished()
-
                 elif event.type == pygame.KEYUP:
                     if event.key == pygame.K_LSHIFT:
                         self.player.running = False
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    self.player.attack(*event.pos)
 
-            if paused:
-                screen.blit(font.render(f" GAME PAUSED", True, pygame.Color("white")), (WIDTH // 2, HEIGHT // 2))
+            if self.paused:
+                t = font.render(f" GAME PAUSED", True, pygame.Color("BLACK"))
+                screen.blit(t, (WIDTH // 2 - t.get_rect().w // 2, HEIGHT // 2 - 100 - t.get_rect().h // 2))
 
             elif self.playing:
                 if self.player.hp <= 0 and not self.on_player_die_timer:
@@ -266,14 +294,12 @@ class Game:
                         if self.current_level == 5:
                             self.start_boss_fighting()
                         elif self.current_level != 6:
-                            self.start_boss_fighting()
+                            self.start_wave()
                         else:
                             Thread(target=self.next_floor, daemon=True).start()
                 elif 0 < self.current_level and len(self.current_level_mobs) == 0 and not self.last_level:
                     self.level_finished()
 
-                if pygame.mouse.get_pressed()[0]:
-                    self.player.attack(*pygame.mouse.get_pos())
                 self.player.key_input()
                 if self.player.gun:
                     self.player.look_at_mouse()
@@ -294,20 +320,22 @@ class Game:
                     pygame.draw.rect(screen, pygame.Color("black"),
                                      [draw_area['l'], draw_area['b'], draw_area['r'] - draw_area['l'],
                                       draw_area['b'] - draw_area['t']])
-                screen.blit(font.render(f" HP: {self.player.hp}", True, pygame.Color("white")), (50, 20))
-                screen.blit(font.render(f" Current lvl: {self.current_level}", True, pygame.Color("white")),
-                            (50, 40))
-                screen.blit(font.render(f"FPS: {clock.get_fps()}", True, pygame.Color("white")), (50, 60))
-                screen.blit(
-                    font.render(f" ARMOR: {self.player.armor} DMG: {self.player.damage}", True, pygame.Color("white")),
-                    (50, 80))
-                screen.blit(font.render(f" prt: {self.player.protection}", True, pygame.Color("white")),
-                            (50, 100))
+                # screen.blit(font.render(f" HP: {self.player.hp}", True, pygame.Color("white")), (50, 20))
+                # screen.blit(font.render(f" Current lvl: {self.current_level}", True, pygame.Color("white")),
+                #             (50, 40))
+                # screen.blit(font.render(f"FPS: {clock.get_fps()}", True, pygame.Color("white")), (50, 60))
+                # screen.blit(
+                #     font.render(f" ARMOR: {self.player.armor} DMG: {self.player.damage}", True, pygame.Color("white")),
+                #     (50, 80))
+                # screen.blit(font.render(f" prt: {self.player.protection}", True, pygame.Color("white")),
+                #             (50, 100))
+
                 self.bar_group.update()
-                if self.current_level_mobs:
-                    screen.blit(
-                        font.render(f" prt: {self.current_level_mobs[0].distance}", True, pygame.Color("white")),
-                        (50, 120))
+                items_text.update()
+
+            # updating buttons
+            self.buttons_group.update()
+            self.buttons_group.draw(screen)
 
             for i in self.transitioning:
                 i()

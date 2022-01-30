@@ -1,19 +1,28 @@
 """
 Вся инфа про боссов, персов
 """
+import sqlite3
 
 
 def increase_mob_characteristics(x):
-    for i in [mini_golem, snake, ice_soul, fire_soul, dog, tree, dragonboss, necroboss, hunter, golem]:
-        i["hp"] = x * i["hp"]
-        i["armor"] = x * i["armor"]
-        i["damage"] = x * i["damage"]
-        i["protection"] = x * i["protection"]
+    con = sqlite3.connect("files/db.sqlite")
+    cur = con.cursor()
+    for mob in [mini_golem, snake, ice_soul, fire_soul, dog, tree, dragonboss, necroboss, hunter, golem]:
+        data = cur.execute(f"""SELECT * FROM mobs WHERE name = '{mob["name"]}'""").fetchone()
+        mob["hp"] = data[1] * x
+        mob["armor"] = data[2] * x
+        mob["damage"] = data[3] * x
 
 
 def make_default_mob_characteristics():
-    pass
-    # TODO: сделать нормальную систему
+    con = sqlite3.connect("files/db.sqlite")
+    cur = con.cursor()
+    for mob in [mini_golem, snake, ice_soul, fire_soul, dog, tree, dragonboss, necroboss, hunter, golem]:
+        data = cur.execute(f"""SELECT * FROM mobs WHERE name = '{mob["name"]}'""").fetchone()
+        mob["hp"] = data[1]
+        mob["armor"] = data[2]
+        mob["damage"] = data[3]
+    con.close()
 
 
 # HEROES
@@ -28,7 +37,6 @@ spearman = {
     "run_speed": 2.5,
     "attack_cooldown": 1,
     "damage": 7,
-    "description": "Метает копья, 10% шанс поставить трипл урон"
 }
 magicman = {
     "name": "Ледяной колдун",
@@ -55,14 +63,12 @@ swordman = {
     "run_speed": 2.0,
     "attack_cooldown": 0.5,
     "damage": 8,
-    "description": "Мастер ближнего боя - в совершенстве владеет рапирой, которой наносит проникающие удары. Носит "
-                   "свою тренировочную броню, из-за чего получает на 1 меньше урона из любого источника. "
 }
 
 # ENEMY
 snake = {
-    "name": "Ядовитая Змея",
-    "img": "abobus.png",
+    "name": "Snake",
+    "img": "Snake/walk-left/1.png",
     "hp": 1,
     "armor": 0,
     "protection": 0,
@@ -73,7 +79,7 @@ snake = {
 }
 
 mini_golem = {
-    "name": "Мини-голем",
+    "name": "Mini-golem",
     "img": "Mini-golem/walk-left/1.png",
     "gun_img": "RockBall.png",
     "hp": 12,
@@ -86,7 +92,7 @@ mini_golem = {
 }
 
 ice_soul = {
-    "name": "Ледяной дух",
+    "name": "Ice-soul",
     "img": "Ice spirit/walk-left/1.png",
     "gun_img": "Ice.png",
     "hp": 10,
@@ -99,7 +105,7 @@ ice_soul = {
 }
 
 fire_soul = {
-    "name": "Огненный дух",
+    "name": "Fire-soul",
     "img": "Fire spirit/walk/1.png",
     "gun_img": "FireBall.png",
     "hp": 10,
@@ -112,7 +118,7 @@ fire_soul = {
 }
 
 dog = {
-    "name": "Пёс",
+    "name": "Dog",
     "img": "Dog/walk-left/1.png",
     "hp": 15,
     "armor": 0,
@@ -124,7 +130,7 @@ dog = {
 }
 
 tree = {
-    "name": "Ёлка",
+    "name": "Tree",
     "img": "Tree/StandUp/1.png",
     "hp": 15,
     "armor": 0,

@@ -19,6 +19,39 @@ def get_random_epic_item():
     return choice(epic_items)
 
 
+class ItemShow(pygame.sprite.Sprite):
+    def __init__(self, texts, screen, img, group):
+        super().__init__(group)
+        self.texts = []
+        self.image = img
+        self.bg = pygame.image.load(f'files/img/items/fone.png')
+        self.screen = screen
+
+        self.bg_cords = (WIDTH * 0.3, HEIGHT * 0.85)
+        font = pygame.font.Font("files/font1.ttf", 28)
+        y = 17 if len(texts) == 1 else 0
+        text_offset = 999999
+        for i in texts:
+            text = font.render(i, True, pygame.Color("black"))
+            x = WIDTH * 0.3 + self.bg.get_rect().w // 2 - text.get_rect().w // 2 + 15
+            text_offset = x if x < text_offset else text_offset
+            pos = (x, HEIGHT * 0.85 + 20 + y)
+            self.texts.append([text, pos])
+            y += 35
+        self.image_cords = (text_offset - 50, HEIGHT * 0.85 + 22)
+
+        words_count = sum([len(i.split(' ')) for i in texts])
+        t = Timer(words_count // 2 if words_count // 2 > 5 else 5, self.kill)
+        t.daemon = True
+        t.start()
+
+    def update(self):
+        self.screen.blit(self.bg, self.bg_cords)
+        for i in self.texts:
+            self.screen.blit(i[0], i[1])
+        self.screen.blit(self.image, self.image_cords)
+
+
 class BaseItem(BaseGameObject):
     def __init__(self, x, y, img):  # drop - предмет выпадает или нет
         super(BaseItem, self).__init__(x, y, "items/" + img, HITBOX_FULL_RECT, team=None, can_slide=False)
@@ -39,6 +72,7 @@ class Plaster(BaseItem):
         super().__init__(x, y, "Plaster.png")
 
     def give_effect(self, obj):
+        ItemShow(["Plaster: +7 HP"], pygame.display.get_surface(), self.image, items_text)
         obj.max_hp += 7
         obj.hp += 7
         self.die()
@@ -49,6 +83,7 @@ class SteelPlaster(BaseItem):
         super().__init__(x, y, "SteelPlaster.png")
 
     def give_effect(self, obj):
+        ItemShow(["Steel Plaster: +5 armor"], pygame.display.get_surface(), self.image, items_text)
         obj.max_armor += 5
         obj.armor += 5
         self.die()
@@ -59,6 +94,7 @@ class Steroids(BaseItem):
         super().__init__(x, y, "Steroids.png")
 
     def give_effect(self, obj):
+        ItemShow([" Steroids: +2 damage"], pygame.display.get_surface(), self.image, items_text)
         obj.increase_damage(2)
         self.die()
 
@@ -68,6 +104,7 @@ class EnergyDrink(BaseItem):
         super().__init__(x, y, "EnergyDrink.png")
 
     def give_effect(self, obj):
+        ItemShow([" Energy Drink: Accelerated running"], pygame.display.get_surface(), self.image, items_text)
         obj.run_speed += 1
         obj.initial_run_speed += 1
         self.die()
@@ -78,6 +115,7 @@ class PocketWatch(BaseItem):
         super().__init__(x, y, "PocketWatch.png")
 
     def give_effect(self, obj):
+        ItemShow([" Pocket Watch: reduces cooldown"], pygame.display.get_surface(), self.image, items_text)
         obj.attack_cooldown -= 0.2 if obj.attack_cooldown - 0.2 > 0.2 else 0
         self.die()
 
@@ -88,6 +126,7 @@ class AppleBag(BaseItem):
         self.parent = None
 
     def give_effect(self, obj):
+        ItemShow([" Apple Bag: +0.5 hp for the each passed room"], pygame.display.get_surface(), self.image, items_text)
         obj.apple_bag_count += 0.5
         self.die()
 
@@ -101,6 +140,9 @@ class ElectricRing(BaseItem):
         super().__init__(x, y, "PlasmLamp.png")
 
     def give_effect(self, obj):
+        ItemShow([" Plasm Lamp: Creating an electric field around the player"], pygame.display.get_surface(),
+                 self.image,
+                 items_text)
         if not obj.has_electric_ring:
             obj.has_electric_ring = self
             self.parent = obj
@@ -113,6 +155,7 @@ class ElectricRing(BaseItem):
             self.enable_attack()
         else:
             obj.has_electric_ring.damage += 1
+            self.die()
 
     def enable_attack(self):
         self.can_attack = True
@@ -141,8 +184,10 @@ class LHead(BaseItem):
         super().__init__(x, y, "LHead.png")
 
     def give_effect(self, obj):
+        ItemShow([" LHead: +5 damage, +1 additional damage from any source"], pygame.display.get_surface(), self.image,
+                 items_text)
         obj.increase_damage(5)
-        obj.protection -= 2
+        obj.protection -= 1
         self.die()
 
 
@@ -151,6 +196,9 @@ class Candle(BaseItem):
         super().__init__(x, y, "Candle.png")
 
     def give_effect(self, obj):
+        ItemShow([" Candle: Sets fire to enemies when hit. ",
+                  "  Sets fire to the character when taking damage"], pygame.display.get_surface(), self.image,
+                 items_text)
         obj.candle_damage += 1
         self.die()
 
@@ -160,6 +208,7 @@ class WeightingStone(BaseItem):
         super().__init__(x, y, "WeightingStone.png")
 
     def give_effect(self, obj):
+        ItemShow([" Weighting Stone: +5 damage, +0.2 cooldown"], pygame.display.get_surface(), self.image, items_text)
         obj.increase_damage(5)
         obj.attack_cooldown += 0.2
         self.die()
@@ -170,6 +219,7 @@ class CursedBlood(BaseItem):
         super().__init__(x, y, "CursedBlood.png")
 
     def give_effect(self, obj):
+        ItemShow([" Cursed Blood: +10% vampirism, -3 HP"], pygame.display.get_surface(), self.image, items_text)
         obj.vampirism += 0.1
         obj.max_hp -= 3
         obj.take_damage(3, from_vampirism=True)
@@ -181,6 +231,7 @@ class Cross(BaseItem):
         super().__init__(x, y, "Cross.png")
 
     def give_effect(self, obj):
+        ItemShow([" Cross: Revives when you die"], pygame.display.get_surface(), self.image, items_text)
         obj.has_cross = True
         self.die()
 
@@ -190,6 +241,9 @@ class WeldingHelmet(BaseItem):
         super().__init__(x, y, "WeldingHelmet.png")
 
     def give_effect(self, obj):
+        ItemShow([" Welding Helmet: -0.5 Speed, -2 damage from any source,", " +10armor, -FOV"],
+                 pygame.display.get_surface(),
+                 self.image, items_text)
         obj.walk_speed -= 0.5
         obj.run_speed -= 0.5
         obj.protection += 2
@@ -209,11 +263,13 @@ class TwinMirror(BaseItem):
         super().__init__(x, y, "TwinMirror.png")
 
     def give_effect(self, obj):
+        ItemShow([" Twin Mirror: 5 secs the received damage annuls,", " 5 secs the received damage doubles"],
+                 pygame.display.get_surface(), self.image, items_text)
         if not obj.has_mirror:
             obj.has_mirror = self
-            self.image = pygame.image.load('files/img/empty.png')
             self.owner = obj
             self.status = 1  # 1 - дамаг анулируется | 2 - дамаг удва
+        self.image = pygame.image.load('files/img/empty.png')
 
     def change_status(self, val):
         self.status = val
@@ -221,19 +277,23 @@ class TwinMirror(BaseItem):
 
     def update(self):
         if self.status:
-            if self.status == 1 and not self.status_changed:
-                self.owner.change_damage_multiplier(0)
-                self.status_changed = True
-                self.timer = Timer(5, self.change_status, [2])
-                self.timer.daemon = True
-                self.timer.start()
+            if self.status == 1:
+                self.owner.image.set_alpha(125)
+                if not self.status_changed:
+                    self.owner.change_damage_multiplier(0)
+                    self.status_changed = True
+                    self.timer = Timer(5, self.change_status, [2])
+                    self.timer.daemon = True
+                    self.timer.start()
 
-            elif self.status == 2 and not self.status_changed:
-                self.owner.change_damage_multiplier(2)
-                self.status_changed = True
-                self.timer = Timer(10, self.change_status, [1])
-                self.timer.daemon = True
-                self.timer.start()
+            elif self.status == 2:
+                self.owner.image.set_alpha(255)
+                if not self.status_changed:
+                    self.owner.change_damage_multiplier(2)
+                    self.status_changed = True
+                    self.timer = Timer(5, self.change_status, [1])
+                    self.timer.daemon = True
+                    self.timer.start()
         else:
             super(TwinMirror, self).update()
 

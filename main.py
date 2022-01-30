@@ -17,19 +17,17 @@ def show_statistics():
         data = [(0, "Mob:", "Kills:")] + con.execute("""SELECT *  from Info""").fetchall()
         con.close()
         y = HEIGHT // 2 + 50
-        x = WIDTH * 0.7
+        x = WIDTH // 2 * 0.46
         for i in data:
             statistic_texts.append((font.render(i[1], True, (255, 255, 255)), x, y))
             statistic_texts.append((font.render(str(i[2]), True, (255, 255, 255)), x + 130, y))
             y += 30
-        print(data)
     else:
         statistic_texts.clear()
 
 
 def change_character():
     global current_hero, hero_img
-    print(current_hero)
     if current_hero == SpearMan:
         current_hero = MagicMan
         hero_img = pygame.transform.scale(pygame.image.load('files/img/MagicMan/down/1.png'), (50 * 3, 60 * 3))
@@ -40,6 +38,10 @@ def change_character():
         current_hero = SpearMan
         hero_img = pygame.transform.scale(pygame.image.load('files/img/SpearMan/down/1.png'), (50 * 3, 60 * 3))
     hero_button.change_image(hero_img, hero_img)
+    current_hero_characteristic.clear()
+    for i in range(len(current_hero.characteristic)):
+        current_hero_characteristic.append((font.render(current_hero.characteristic[i], True, pygame.Color("BLACK")),
+                                            (WIDTH // 2) * 1.05, (HEIGHT // 2) * 1.4 + dy + 25 * i))
 
 
 def print_hi():
@@ -57,12 +59,17 @@ current_hero = SpearMan
 hero_img = pygame.transform.scale(pygame.image.load('files/img/SpearMan/down/1.png'), (50 * 3, 60 * 3))
 statistic_texts = []  # (rendered_text, x, y)
 
-hero_text = (font.render("YOUR HERO: ", True, pygame.Color("BLACK")), (WIDTH // 2) * 0.645, (HEIGHT // 2) * 0.87 + dy)
-hero_button = Button((WIDTH // 2) * 0.7, (HEIGHT // 2) * 1.1 + dy, sprites, hero_img, hero_img, change_character)
-start_button = Button(WIDTH // 2, HEIGHT // 2 + dy, sprites, 'start.png', 'start_pressed.png', start_game)
-exit_button = Button(WIDTH // 2, HEIGHT // 2 + 120 + dy, sprites, 'exit.png', 'exit_pressed.png', lambda x=0: exit())
-statistic_button = Button((WIDTH // 2) * 1.3, (HEIGHT // 2) * 1.1 + dy, sprites, 'statis.png', 'statis_pressed.png',
+hero_text = (font.render("YOUR HERO: ", True, pygame.Color("BLACK")), (WIDTH // 2) * 1.07, (HEIGHT // 2) * 0.93 + dy)
+current_hero_characteristic = []
+for i in range(len(current_hero.characteristic)):
+    current_hero_characteristic.append((font.render(current_hero.characteristic[i], True, pygame.Color("BLACK")),
+                                        (WIDTH // 2) * 1.05, (HEIGHT // 2) * 1.4 + dy + 25 * i))
+hero_button = Button((WIDTH // 2) * 1.14, (HEIGHT // 2) * 1.18 + dy, sprites, hero_img, hero_img, change_character)
+start_button = Button(WIDTH // 2 * 0.85, HEIGHT // 2 + dy, sprites, 'start.png', 'start_pressed.png', start_game)
+statistic_button = Button(WIDTH // 2 * 0.85, (HEIGHT // 2) * 1.2 + dy, sprites, 'statis.png', 'statis_pressed.png',
                           show_statistics)
+exit_button = Button(WIDTH // 2 * 0.85, HEIGHT // 2 * 1.4 + dy, sprites, 'exit.png', 'exit_pressed.png',
+                     lambda x=0: exit())
 
 
 playing = True
@@ -81,6 +88,6 @@ while playing:
     screen.blit(hero_text[0], hero_text[1:])
     for i in statistic_texts:
         screen.blit(i[0], i[1:])
+    for i in current_hero_characteristic:
+        screen.blit(i[0], i[1:])
     pygame.display.flip()
-
-# TODO: Сделать кнопку about

@@ -525,7 +525,6 @@ class FireSoul(BaseEnemy):
 # BOSSES
 
 class DragonBoss(BaseEnemy):
-    # Добавить анимаций и подправить хитбокс
     def __init__(self, x, y, pl):
 
         self.positions = [[6615, 165], [7745, 165], [6615, 815], [7745, 815]]
@@ -538,6 +537,7 @@ class DragonBoss(BaseEnemy):
         self.can_m_attack = True
         self.can_move = True
         self.will_fly_rn = False
+        self.will_m_attack_rn = False
         self.meele_range = data["m_range"]
         self.speed_accelerator_timer = None
         super().__init__(x, y, data["img"], data["hp"], data["armor"], data["protection"], data["speed"],
@@ -582,6 +582,7 @@ class DragonBoss(BaseEnemy):
         self.speed = self.initial_speed * 2
 
     def m_attack(self):
+        self.will_m_attack_rn = False
         self.speed = self.initial_speed
         if self.speed_accelerator_timer:
             self.speed_accelerator_timer.cancel()
@@ -605,8 +606,9 @@ class DragonBoss(BaseEnemy):
                 if self.distance <= self.meele_range and not self.will_fly_rn and self.can_m_attack:
                     self.can_m_attack = False
                     self.play_animation(f"Melee-attack-{self.player_side}", once=True, play_now=True)
+                    self.will_m_attack_rn = True
                     Timer(0.4, self.m_attack).start()
-                elif not self.will_fly_rn:
+                elif not self.will_fly_rn and not self.will_m_attack_rn:
                     if self.can_attack:
                         self.can_move = False
                         self.play_animation(f"Fire-attack-{self.player_side}", once=True, play_now=True)
@@ -616,7 +618,7 @@ class DragonBoss(BaseEnemy):
                         self.speed_accelerator_timer = Timer(5, self.accelerate)
                         self.speed_accelerator_timer.daemon = True
                         self.speed_accelerator_timer.start()
-            if self.speed and not self.will_fly_rn and self.can_move:
+            if self.speed and not self.will_fly_rn and self.can_move and not self.will_m_attack_rn:
                 self.move_to_player()
                 self.play_animation(f"Walk-{self.player_side}")
 
@@ -671,7 +673,7 @@ class NecroBoss(BaseEnemy):
         Timer(2, self.allow_ult).start()
 
     def attack(self):
-        NecroAttack(self.global_x + self.rect.w // 2, self.global_y + self.rect.h // 2, self.player)
+        NecroAttack(self.hitbox.rect.centerx + self.vector.x * 10, self.hitbox.rect.centery + self.vector.y * 10, self.player)
         self.attack_cooldown_func()
 
     def ult(self):
@@ -763,7 +765,7 @@ class Hunter(BaseEnemy):
         Timer(5, self.allow_ult).start()
 
     def attack(self):
-        HunterAttack(self.hitbox.rect.centerx, self.hitbox.rect.centery, self.vector)
+        HunterAttack(self.hitbox.rect.centerx + self.vector.x * 10, self.hitbox.rect.centery + self.vector.y * 10, self.vector)
         self.attack_cooldown_func()
         self.speed = self.initial_speed
 
@@ -845,6 +847,7 @@ class Golem(BaseEnemy):
                          data["attack_cooldown"], data["damage"], data["attack_distance"], pl,
                          hitbox=[68, 80, 143 - 68, 193 - 80])
         self.name = data["name"]
+        self.blood_color = pygame.transform.average_color(self.initial_image)
         self.add_animation('walk-left', 'Golem/walk-left')
         self.add_animation('walk-right', 'Golem/walk-right')
         self.add_animation('attack-left', 'Golem/attack-left')
@@ -860,7 +863,7 @@ class Golem(BaseEnemy):
             t = Timer(i, self.spawn_mini_golem)
             t.daemon = True
             t.start()
-        t = Timer(2, self.enable_need_check)
+        t = Timer(3, self.enable_need_check)
         t.daemon = True
         t.start()
 
@@ -892,7 +895,7 @@ class Golem(BaseEnemy):
     def attack(self):
         if self.alive():
             self.attacking = False
-            GolemAttack(self.hitbox.rect.centerx, self.hitbox.rect.centery, self.vector)
+            GolemAttack(self.hitbox.rect.centerx + self.vector.x * 10, self.hitbox.rect.centery + self.vector.y + 10, self.vector)
             self.attack_cooldown_func()
 
     def update(self):
