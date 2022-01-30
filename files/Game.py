@@ -1,4 +1,5 @@
 import time
+import sys
 import random
 import sqlite3
 from threading import Thread
@@ -252,7 +253,7 @@ class Game:
         while self.running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    quit()
+                    sys.exit(0)
 
                 elif event.type == PLAY_ANIMATION:
                     for _obj in play_animation_group:
