@@ -25,7 +25,7 @@ PLAY_ANIMATION = pygame.USEREVENT + 1
 
 pygame.event.set_allowed([pygame.QUIT, pygame.KEYDOWN, pygame.KEYUP, PLAY_ANIMATION])
 pygame.time.set_timer(PLAY_ANIMATION, 100)
-
+pygame.display.set_caption("Knights of souls! V1.0")
 
 class Game:
     player_start_pos = [(128, 448), (128, 576), (320, 576), (320, 448)]
@@ -252,7 +252,7 @@ class Game:
         while self.running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    exit()
+                    quit()
 
                 elif event.type == PLAY_ANIMATION:
                     for _obj in play_animation_group:

@@ -69,9 +69,9 @@ start_button = Button(WIDTH // 2 * 0.85, HEIGHT // 2 + dy, sprites, 'start.png',
 statistic_button = Button(WIDTH // 2 * 0.85, (HEIGHT // 2) * 1.2 + dy, sprites, 'statis.png', 'statis_pressed.png',
                           show_statistics)
 exit_button = Button(WIDTH // 2 * 0.85, HEIGHT // 2 * 1.4 + dy, sprites, 'exit.png', 'exit_pressed.png',
-                     lambda x=0: exit())
+                     lambda x=0: quit())
 
-
+pygame.display.set_caption("Knights of souls! V1.0")
 playing = True
 while playing:
     for event in pygame.event.get():
