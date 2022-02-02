@@ -25,6 +25,7 @@ def update_statistics(name_of_mob, cur):
     cur.execute("""UPDATE Info
                             SET kills = {}
                             WHERE name = '{}'""".format(res + temp_stats[name_of_mob], name_of_mob))
+    temp_stats[name_of_mob] = 0
 
 
 class LayeredUpdates(pygame.sprite.LayeredUpdates):
